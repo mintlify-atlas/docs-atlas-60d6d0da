@@ -1,0 +1,286 @@
+---
+title: Learning Output Style
+description: Interactive learning mode that requests code contributions at decision points
+---
+
+Combines interactive learning with educational insights, encouraging you to write meaningful code at key decision points.
+
+<Warning>
+  This plugin increases token usage and creates an interactive workflow where you'll be asked to contribute code. Only enable if you want an active learning experience.
+</Warning>
+
+## Overview
+
+The Learning Output Style plugin transforms Claude Code from an automation tool into an interactive teaching environment. Instead of implementing everything automatically, Claude identifies opportunities where **you** can write 5-10 lines of meaningful code.
+
+## What It Does
+
+When enabled, Claude will:
+
+<Steps>
+  <Step title="Identify Learning Opportunities">
+    Find places where you can write meaningful business logic or make design choices
+  </Step>
+  
+  <Step title="Prepare Context">
+    Set up the environment and explain the trade-offs you'll need to consider
+  </Step>
+  
+  <Step title="Request Your Contribution">
+    Ask you to implement 5-10 lines of code where your input truly matters
+  </Step>
+  
+  <Step title="Provide Educational Insights">
+    Share explanations about implementation choices and patterns
+  </Step>
+</Steps>
+
+## Installation
+
+This plugin is bundled with Claude Code. To enable it:
+
+```bash
+/plugin enable learning-output-style
+```
+
+## When Claude Requests Contributions
+
+You'll be asked to write code for:
+
+- **Business logic** with multiple valid approaches
+- **Error handling strategies** requiring judgment
+- **Algorithm choices** affecting performance
+- **Data structure decisions**
+- **User experience trade-offs**
+- **Design patterns** and architecture
+
+## When Claude Implements Directly
+
+Claude handles automatically:
+
+- Boilerplate and repetitive code
+- Obvious implementations with no choices
+- Configuration and setup
+- Simple CRUD operations
+
+## Example Interaction
+
+### Scenario: Building an Authentication System
+
+**Claude:**
+
+```
+★ Insight ─────────────────────────────────────
+• Session management has a security vs. UX trade-off
+• Auto-extending sessions improve user experience but may
+  leave sessions open longer
+• Hard timeouts are more secure but might frustrate users
+─────────────────────────────────────────────────
+
+I've set up the authentication middleware structure in
+auth/middleware.ts. Now you need to decide on session
+timeout behavior.
+
+In auth/middleware.ts, implement handleSessionTimeout():
+
+Consider these approaches:
+1. Auto-extend: Reset timeout on each request
+2. Hard timeout: Fixed expiry from creation
+3. Hybrid: Extend up to max lifetime
+
+Which approach fits your security requirements?
+Implement your chosen strategy in 5-10 lines.
+```
+
+**You write:**
+
+```typescript
+function handleSessionTimeout(session: Session): boolean {
+  const now = Date.now();
+  const maxLifetime = 7 * 24 * 60 * 60 * 1000; // 7 days
+  const idleTimeout = 30 * 60 * 1000; // 30 minutes
+  
+  // Hybrid approach: extend up to max lifetime
+  if (now - session.created > maxLifetime) return false;
+  if (now - session.lastActivity > idleTimeout) return false;
+  
+  session.lastActivity = now;
+  return true;
+}
+```
+
+**Claude:**
+
+```
+★ Insight ─────────────────────────────────────
+• Your hybrid approach balances security and UX well
+• The 7-day max lifetime prevents indefinite sessions
+• 30-minute idle timeout catches abandoned sessions
+• Updating lastActivity on each request completes the loop
+─────────────────────────────────────────────────
+
+Great implementation! Let me add the tests and
+integration with your auth flow...
+```
+
+## Educational Insights Format
+
+In addition to interactive prompts, you'll see insights using this format:
+
+```
+★ Insight ─────────────────────────────────────
+[2-3 key educational points about the codebase]
+─────────────────────────────────────────────────
+```
+
+These insights focus on:
+- Codebase-specific patterns
+- Implementation trade-offs
+- Why certain approaches were chosen
+- Design decisions and conventions
+
+## Philosophy
+
+**Learning by doing is more effective than passive observation.**
+
+This plugin ensures you:
+- Develop practical skills through hands-on coding
+- Make meaningful design decisions
+- Understand trade-offs in real contexts
+- Build muscle memory for common patterns
+
+## Comparison: Explanatory vs Learning
+
+<Tabs>
+  <Tab title="Learning Style">
+    **Interactive + Educational**
+    
+    - You write 5-10 lines at decision points
+    - Claude explains trade-offs before you code
+    - Active learning through contribution
+    - Educational insights included
+    
+    Best for: **Learning while building**
+  </Tab>
+  
+  <Tab title="Explanatory Style">
+    **Educational Only**
+    
+    - Claude implements everything
+    - Provides insights about choices made
+    - Passive learning through observation
+    
+    Best for: **Understanding existing patterns**
+  </Tab>
+</Tabs>
+
+## Migration from Output Styles
+
+This plugin combines the unshipped "Learning" output style with the deprecated "Explanatory" output style.
+
+### Before (deprecated)
+
+```json
+{
+  "outputStyle": "Explanatory"
+}
+```
+
+### After (current)
+
+```bash
+# For interactive learning:
+/plugin enable learning-output-style
+
+# For passive insights only:
+/plugin enable explanatory-output-style
+```
+
+<Note>
+  If you previously used explanatory-output-style, the learning plugin includes all that functionality plus interactive features.
+</Note>
+
+## Managing the Plugin
+
+<Tabs>
+  <Tab title="Disable">
+    Turn off temporarily:
+    
+    ```bash
+    /plugin disable learning-output-style
+    ```
+  </Tab>
+  
+  <Tab title="Uninstall">
+    Remove completely:
+    
+    ```bash
+    /plugin uninstall learning-output-style
+    ```
+  </Tab>
+  
+  <Tab title="Customize">
+    Create your own version:
+    
+    ```bash
+    "Fork the learning-output-style plugin and adjust the
+    threshold for when to request contributions"
+    ```
+  </Tab>
+</Tabs>
+
+## Token Usage
+
+Expect higher token usage than explanatory-output-style:
+
+- **~300 tokens** added to system prompt per session
+- **~100-200 tokens** per contribution request
+- **~50-150 tokens** per insight
+
+For a 20-turn session: **~1,300-2,300 additional tokens**
+
+## When to Use
+
+<CardGroup cols={2}>
+  <Card title="Use Learning Style" icon="check" color="#10b981">
+    - Learning a new codebase
+    - Building skills in a framework
+    - Making architecture decisions
+    - Training on best practices
+  </Card>
+  
+  <Card title="Use Standard Mode" icon="x" color="#ef4444">
+    - Routine maintenance tasks
+    - Repetitive updates
+    - Time-sensitive work
+    - Well-understood patterns
+  </Card>
+</CardGroup>
+
+## Details
+
+<Accordion title="Plugin Information">
+  **Name:** learning-output-style
+  
+  **Type:** SessionStart Hook
+  
+  **Author:** Boris Cherny (boris@anthropic.com)
+  
+  **Version:** 1.0.0
+  
+  **Hook File:** `hooks-handlers/session-start.sh`
+  
+  **Includes:** All functionality from explanatory-output-style
+</Accordion>
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Explanatory Style" icon="lightbulb" href="/plugins/bundled/explanatory-output-style">
+    Educational insights without interaction
+  </Card>
+  
+  <Card title="Hook Development" icon="webhook" href="/plugins/development/hooks">
+    Build your own SessionStart hooks
+  </Card>
+</CardGroup>

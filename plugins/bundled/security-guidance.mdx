@@ -1,0 +1,323 @@
+---
+title: Security Guidance
+description: Security reminder hook that warns about potential security issues when editing files
+---
+
+Automatically warns about potential security vulnerabilities when Claude edits files, helping prevent common security mistakes.
+
+## Overview
+
+The Security Guidance plugin monitors file edits for common security patterns and provides warnings before Claude writes potentially vulnerable code. It acts as a safety net, catching security issues early.
+
+## Installation
+
+This plugin is bundled with Claude Code. To enable it:
+
+```bash
+/plugin enable security-guidance
+```
+
+## How It Works
+
+The plugin uses a **PreToolUse hook** that:
+
+1. Monitors all file edit operations
+2. Checks file paths and content for security patterns
+3. Shows warnings when risky patterns are detected
+4. Provides specific guidance for each vulnerability type
+
+<Note>
+  The hook runs **before** Claude writes the file, giving you a chance to reconsider the approach.
+</Note>
+
+## Security Patterns Detected
+
+The plugin monitors for 9 common security issues:
+
+### 1. GitHub Actions Command Injection
+
+**Files:** `.github/workflows/*.yml`, `.github/workflows/*.yaml`
+
+**What it catches:**
+- Untrusted input used directly in `run:` commands
+- Issue titles, PR descriptions, commit messages in shell commands
+
+**Guidance provided:**
+```yaml
+# UNSAFE ❌
+run: echo "${{ github.event.issue.title }}"
+
+# SAFE ✅  
+env:
+  TITLE: ${{ github.event.issue.title }}
+run: echo "$TITLE"
+```
+
+### 2. SQL Injection
+
+**Files:** `*.py`, `*.js`, `*.ts`, `*.php`, `*.rb`
+
+**What it catches:**
+- String concatenation in SQL queries
+- Unparameterized queries with user input
+
+**Guidance provided:**
+```python
+# UNSAFE ❌
+query = f"SELECT * FROM users WHERE id = {user_id}"
+
+# SAFE ✅
+query = "SELECT * FROM users WHERE id = ?"
+cursor.execute(query, (user_id,))
+```
+
+### 3. Command Injection
+
+**Files:** `*.py`, `*.js`, `*.ts`, `*.sh`, `*.bash`
+
+**What it catches:**
+- Using `os.system()`, `eval()`, `exec()` with user input
+- Shell commands with unvalidated strings
+
+**Guidance provided:**
+```python
+# UNSAFE ❌
+os.system(f"convert {filename} output.png")
+
+# SAFE ✅
+subprocess.run(["convert", filename, "output.png"], check=True)
+```
+
+### 4. Cross-Site Scripting (XSS)
+
+**Files:** `*.jsx`, `*.tsx`, `*.vue`, `*.html`
+
+**What it catches:**
+- `dangerouslySetInnerHTML` usage
+- `innerHTML` assignments
+- Unescaped user content in templates
+
+**Guidance provided:**
+```jsx
+// UNSAFE ❌
+<div dangerouslySetInnerHTML={{__html: userContent}} />
+
+// SAFE ✅
+<div>{DOMPurify.sanitize(userContent)}</div>
+```
+
+### 5. Path Traversal
+
+**Files:** All file types with file path operations
+
+**What it catches:**
+- User-controlled file paths
+- Missing validation on path strings
+- Direct use of `../` patterns
+
+**Guidance provided:**
+```javascript
+// UNSAFE ❌
+fs.readFile(`/uploads/${userFilename}`);
+
+// SAFE ✅
+const safe = path.basename(userFilename);
+fs.readFile(path.join('/uploads', safe));
+```
+
+### 6. Insecure Deserialization
+
+**Files:** `*.py`, `*.js`, `*.java`
+
+**What it catches:**
+- Using `pickle.load()` on untrusted data
+- Unsafe `JSON.parse()` patterns
+- Java deserialization of external data
+
+**Guidance provided:**
+```python
+# UNSAFE ❌
+data = pickle.load(user_file)
+
+# SAFE ✅
+import json
+data = json.loads(user_file.read())
+```
+
+### 7. Hardcoded Secrets
+
+**Files:** All code files
+
+**What it catches:**
+- API keys in source code
+- Passwords in configuration
+- Tokens and credentials hardcoded
+
+**Guidance provided:**
+```python
+# UNSAFE ❌
+API_KEY = "sk_live_abc123..."
+
+# SAFE ✅  
+API_KEY = os.environ.get("API_KEY")
+```
+
+### 8. Insecure Randomness
+
+**Files:** `*.py`, `*.js`, `*.java`, `*.go`
+
+**What it catches:**
+- Using `Math.random()` for security tokens
+- Non-cryptographic random for secrets
+
+**Guidance provided:**
+```javascript
+// UNSAFE ❌
+const token = Math.random().toString(36);
+
+// SAFE ✅
+const token = crypto.randomBytes(32).toString('hex');
+```
+
+### 9. Unsafe HTML Rendering
+
+**Files:** `*.jsx`, `*.tsx`, `*.vue`, `*.svelte`
+
+**What it catches:**
+- Direct HTML string rendering
+- Unsafe component props
+
+**Guidance provided:**
+```jsx
+// UNSAFE ❌
+<Component html={userInput} />
+
+// SAFE ✅
+<Component text={DOMPurify.sanitize(userInput)} />
+```
+
+## Example Warnings
+
+When Claude attempts to edit a GitHub Actions workflow:
+
+```
+⚠️  SECURITY REMINDER ⚠️
+
+You are editing a GitHub Actions workflow file.
+Be aware of these security risks:
+
+1. Command Injection: Never use untrusted input (like issue
+   titles, PR descriptions) directly in run: commands
+   
+2. Use environment variables: Instead of 
+   ${{ github.event.issue.title }}, use env: with proper
+   quoting
+   
+3. Review the guide:
+   https://github.blog/security/vulnerability-research/
+   how-to-catch-github-actions-workflow-injections
+
+Example of UNSAFE pattern to avoid:
+run: echo "${{ github.event.issue.title }}"
+
+Example of SAFE pattern:
+env:
+  TITLE: ${{ github.event.issue.title }}
+run: echo "$TITLE"
+
+Other risky inputs: pull_request.title, issue.body,
+comment.body, head_commit.message
+```
+
+## Configuration
+
+No configuration required. The plugin activates automatically when enabled.
+
+### Session-Based Warnings
+
+Warnings are shown once per session per file. This prevents:
+- Repetitive warnings on the same file
+- Disruption to workflow
+- Warning fatigue
+
+## When to Disable
+
+Consider disabling if:
+
+- Working on non-security-sensitive code
+- Warnings become disruptive
+- You have other security tooling (e.g., CodeQL)
+
+```bash
+/plugin disable security-guidance
+```
+
+## Technical Details
+
+### Hook Implementation
+
+The plugin uses Python for pattern matching:
+
+```python
+# From hooks/security_reminder_hook.py
+SECURITY_PATTERNS = [
+  {
+    "ruleName": "github_actions_workflow",
+    "path_check": lambda path: ".github/workflows/" in path,
+    "reminder": "..."
+  },
+  # ... 8 more patterns
+]
+```
+
+### State Management
+
+Warnings are tracked per session:
+
+- State file: `/tmp/security-warnings-{session-id}.json`
+- Cleared when session ends
+- Survives session resume
+
+## Limitations
+
+<Warning>
+  This plugin provides **guidance**, not absolute protection. Always:
+  - Review security-sensitive code carefully
+  - Use static analysis tools (SAST)
+  - Perform security testing
+  - Follow your organization's security policies
+</Warning>
+
+The plugin:
+- Cannot detect all vulnerabilities
+- Uses simple pattern matching
+- May have false negatives
+- Should supplement, not replace, security reviews
+
+## Details
+
+<Accordion title="Plugin Information">
+  **Name:** security-guidance
+  
+  **Type:** PreToolUse Hook (Python)
+  
+  **Author:** David Dworken (dworken@anthropic.com)
+  
+  **Version:** 1.0.0
+  
+  **Hook File:** `hooks/security_reminder_hook.py`
+  
+  **Patterns Monitored:** 9 security vulnerability types
+</Accordion>
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Hook Development" icon="webhook" href="/plugins/development/hooks">
+    Build your own PreToolUse hooks
+  </Card>
+  
+  <Card title="Project Config" icon="file-code" href="/configuration/project-config">
+    CLAUDE.md security guidelines
+  </Card>
+</CardGroup>

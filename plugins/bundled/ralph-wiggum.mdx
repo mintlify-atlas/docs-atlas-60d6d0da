@@ -1,0 +1,349 @@
+---
+title: Ralph Wiggum
+description: Interactive self-referential AI loops for iterative development
+---
+
+Implementation of the Ralph Wiggum technique for continuous AI agent loops. Claude works on the same task repeatedly until completion.
+
+## Overview
+
+Ralph is a development methodology based on **continuous AI agent loops**. As Geoffrey Huntley describes it: **"Ralph is a Bash loop"** - Claude repeatedly works on the same prompt, seeing its previous work in files, until the task is complete.
+
+The technique is named after Ralph Wiggum from The Simpsons, embodying the philosophy of **persistent iteration despite setbacks**.
+
+## How It Works
+
+Ralph uses a **Stop hook** that intercepts Claude's exit attempts:
+
+```bash
+# You run ONCE:
+/ralph-loop "Build a todo API. Output <promise>DONE</promise> when complete."
+
+# Then Claude Code automatically:
+# 1. Works on the task
+# 2. Tries to exit (thinking it's done)
+# 3. Stop hook blocks exit
+# 4. Stop hook feeds the SAME prompt back
+# 5. Repeat until completion promise appears
+```
+
+### Self-Referential Feedback Loop
+
+The magic happens because:
+- **The prompt never changes** between iterations
+- **Claude's previous work persists** in files and git history
+- **Each iteration sees modified files** from the last attempt
+- **Claude autonomously improves** by reading its own past work
+
+This creates genuine iteration without external orchestration.
+
+## Installation
+
+This plugin is bundled with Claude Code. To enable it:
+
+```bash
+/plugin enable ralph-wiggum
+```
+
+## Commands
+
+### /ralph-loop
+
+Start a Ralph iteration loop.
+
+```bash
+/ralph-loop "<prompt>" --max-iterations <n> --completion-promise "<text>"
+```
+
+<ParamField path="prompt" type="string" required>
+  The task description (never changes between iterations)
+</ParamField>
+
+<ParamField path="--max-iterations" type="number">
+  Stop after N iterations (default: unlimited)
+  
+  **Always recommended** as a safety net
+</ParamField>
+
+<ParamField path="--completion-promise" type="string">
+  Exact phrase that signals task completion
+  
+  Example: `"COMPLETE"`, `"DONE"`, `"SUCCESS"`
+</ParamField>
+
+### /cancel-ralph
+
+Cancel the active Ralph loop.
+
+```bash
+/cancel-ralph
+```
+
+## Quick Start
+
+```bash
+/ralph-loop "Build a REST API for todos. Requirements: CRUD operations, input validation, tests. Output <promise>COMPLETE</promise> when all tests pass." --completion-promise "COMPLETE" --max-iterations 50
+```
+
+**What happens:**
+
+<Steps>
+  <Step title="Iteration 1">
+    Claude implements basic CRUD endpoints, writes tests, runs them. Tests fail.
+  </Step>
+  
+  <Step title="Iteration 2">
+    Claude sees failed tests in terminal output, fixes validation bugs, reruns tests. Some pass.
+  </Step>
+  
+  <Step title="Iteration 3">
+    Claude sees remaining failures, adds missing error handling, all tests pass.
+  </Step>
+  
+  <Step title="Completion">
+    Claude outputs `<promise>COMPLETE</promise>`. Loop terminates.
+  </Step>
+</Steps>
+
+## Prompt Writing Best Practices
+
+### 1. Clear Completion Criteria
+
+❌ **Bad:** "Build a todo API and make it good."
+
+✅ **Good:**
+
+```markdown
+Build a REST API for todos.
+
+When complete:
+- All CRUD endpoints working
+- Input validation in place  
+- Tests passing (coverage > 80%)
+- README with API docs
+- Output: <promise>COMPLETE</promise>
+```
+
+### 2. Incremental Goals
+
+❌ **Bad:** "Create a complete e-commerce platform."
+
+✅ **Good:**
+
+```markdown
+Phase 1: User authentication (JWT, tests)
+Phase 2: Product catalog (list/search, tests)
+Phase 3: Shopping cart (add/remove, tests)
+
+Output <promise>COMPLETE</promise> when all phases done.
+```
+
+### 3. Self-Correction Instructions
+
+❌ **Bad:** "Write code for feature X."
+
+✅ **Good:**
+
+```markdown
+Implement feature X following TDD:
+1. Write failing tests
+2. Implement feature
+3. Run tests
+4. If any fail, debug and fix
+5. Refactor if needed
+6. Repeat until all green
+7. Output: <promise>COMPLETE</promise>
+```
+
+### 4. Always Use Escape Hatches
+
+**Always set `--max-iterations`** as a safety net:
+
+```bash
+/ralph-loop "Build feature X" --max-iterations 20 --completion-promise "DONE"
+```
+
+In your prompt, include what to do if stuck:
+
+```markdown
+After 15 iterations, if not complete:
+- Document what's blocking progress
+- List what was attempted  
+- Suggest alternative approaches
+- Output: <promise>BLOCKED</promise>
+```
+
+<Warning>
+  The `--completion-promise` uses exact string matching. You cannot use it for multiple conditions ("SUCCESS" vs "BLOCKED"). Always rely on `--max-iterations` as your primary safety mechanism.
+</Warning>
+
+## Philosophy
+
+Ralph embodies these principles:
+
+<CardGroup cols={2}>
+  <Card title="Iteration > Perfection" icon="rotate">
+    Don't aim for perfect on first try. Let the loop refine the work.
+  </Card>
+  
+  <Card title="Failures Are Data" icon="flask">
+    Failures are predictable and informative. Use them to tune prompts.
+  </Card>
+  
+  <Card title="Operator Skill Matters" icon="user">
+    Success depends on writing good prompts, not just having a good model.
+  </Card>
+  
+  <Card title="Persistence Wins" icon="trophy">
+    Keep trying until success. The loop handles retry logic automatically.
+  </Card>
+</CardGroup>
+
+## When to Use Ralph
+
+### Good For
+
+- **Well-defined tasks** with clear success criteria
+- **Iterative refinement** (e.g., getting tests to pass)
+- **Greenfield projects** where you can step away
+- **Tasks with automatic verification** (tests, linters, builds)
+
+### Not Good For
+
+- **Tasks requiring human judgment** or design decisions
+- **One-shot operations**
+- **Tasks with unclear success criteria**
+- **Production debugging** (use targeted debugging instead)
+
+## Real-World Results
+
+From the community:
+
+<CardGroup cols={3}>
+  <Card title="6 Repositories" icon="code">
+    Generated overnight during Y Combinator hackathon testing
+  </Card>
+  
+  <Card title="$50k Contract" icon="dollar-sign">
+    Completed for $297 in API costs
+  </Card>
+  
+  <Card title="Programming Language" icon="language">
+    Created entire language ("cursed") over 3 months
+  </Card>
+</CardGroup>
+
+## Technical Details
+
+### How the Stop Hook Works
+
+From `hooks/stop-hook.sh`:
+
+```bash
+#!/bin/bash
+# When Claude tries to exit:
+# 1. Check if ralph-loop is active
+# 2. Check if completion promise appeared
+# 3. Check if max iterations reached
+# 4. If none: inject original prompt back and return 1 (block exit)
+# 5. Else: return 0 (allow exit)
+```
+
+The Stop hook has access to:
+- Original prompt from `/ralph-loop` invocation
+- All conversation history
+- File system state
+- Git history
+
+## Examples
+
+### Example 1: Build and Test
+
+```bash
+/ralph-loop "Create a TypeScript utility library for date formatting. Include: parseDate(), formatDate(), isValid(). Write Jest tests. Run tests. Fix failures. Output <promise>READY</promise> when coverage > 90%." --max-iterations 30 --completion-promise "READY"
+```
+
+### Example 2: Bug Fixing Loop
+
+```bash
+/ralph-loop "Fix all ESLint errors in src/. Run 'npm run lint' each iteration. Output <promise>CLEAN</promise> when no errors remain." --max-iterations 15 --completion-promise "CLEAN"
+```
+
+### Example 3: Documentation Generation
+
+```bash
+/ralph-loop "Generate API docs for all functions in src/api/. Check that every function has JSDoc. Run 'npm run docs' to verify. Output <promise>DOCUMENTED</promise> when complete." --max-iterations 20 --completion-promise "DOCUMENTED"
+```
+
+## Troubleshooting
+
+### Loop Runs Forever
+
+**Cause:** Completion promise never appears or max iterations not set.
+
+**Solution:**
+```bash
+# Use /cancel-ralph to stop
+/cancel-ralph
+
+# Then retry with safety limit:
+/ralph-loop "..." --max-iterations 25
+```
+
+### Task Not Making Progress
+
+**Cause:** Prompt lacks self-correction instructions.
+
+**Solution:** Add explicit iteration steps:
+
+```markdown
+On each iteration:
+1. Run tests
+2. Read test output
+3. Fix ONE failing test
+4. Repeat
+```
+
+### Completion Promise Not Detected
+
+**Cause:** String mismatch (case-sensitive, whitespace matters).
+
+**Solution:** Use simple, unique strings:
+
+```bash
+--completion-promise "DONE"  # Good
+--completion-promise "Task Complete!"  # Bad (punctuation/spaces)
+```
+
+## Learn More
+
+- [Original Ralph Technique](https://ghuntley.com/ralph/) - Geoffrey Huntley's blog
+- [Ralph Orchestrator](https://github.com/mikeyobrien/ralph-orchestrator) - External tooling
+
+## Details
+
+<Accordion title="Plugin Information">
+  **Name:** ralph-wiggum
+  
+  **Type:** Stop Hook + Commands
+  
+  **Author:** Daisy Hollman (daisy@anthropic.com)
+  
+  **Version:** 1.0.0
+  
+  **Commands:** `/ralph-loop`, `/cancel-ralph`
+  
+  **Hook:** `hooks/stop-hook.sh`
+</Accordion>
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Task Automation" icon="robot" href="/guides/task-automation">
+    Other automation patterns
+  </Card>
+  
+  <Card title="Hook Development" icon="webhook" href="/plugins/development/hooks">
+    Build your own Stop hooks
+  </Card>
+</CardGroup>

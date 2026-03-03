@@ -1,0 +1,116 @@
+---
+title: Claude Opus 4.5 Migration
+description: Migrate your code and prompts from Sonnet 4.x and Opus 4.1 to Opus 4.5
+---
+
+Automate the migration of your codebase to use Claude Opus 4.5, handling model strings, beta headers, and configuration updates.
+
+## Overview
+
+The Claude Opus 4.5 Migration plugin is a skill that updates your code and prompts to be compatible with Opus 4.5. It automates the migration process, handling:
+
+- Model version strings
+- Beta header requirements
+- Configuration file updates
+- Prompt adjustments for Opus 4.5
+
+## Installation
+
+This plugin is bundled with Claude Code. To enable it:
+
+```bash
+/plugin enable claude-opus-4-5-migration
+```
+
+## Usage
+
+### Migrate to Opus 4.5
+
+Simply describe your migration needs in natural language:
+
+```bash
+"Migrate my codebase to Opus 4.5"
+```
+
+### What Gets Migrated
+
+The skill automatically handles:
+
+<CardGroup cols={2}>
+  <Card title="Model Strings" icon="code">
+    Updates model identifiers to Opus 4.5 format
+  </Card>
+  
+  <Card title="Beta Headers" icon="flask">
+    Adds or updates required beta headers
+  </Card>
+  
+  <Card title="Configuration" icon="gear">
+    Updates configuration files and settings
+  </Card>
+  
+  <Card title="Prompts" icon="message">
+    Adjusts prompts for Opus 4.5 behavior
+  </Card>
+</CardGroup>
+
+## Examples
+
+### Migrate API Integration
+
+```bash
+"Update my Anthropic API calls to use Opus 4.5"
+```
+
+The skill will:
+1. Find all API client instantiations
+2. Update model strings to Opus 4.5
+3. Add required beta headers
+4. Update configuration files
+
+### Fix Opus 4.5 Issues
+
+```bash
+"I'm having issues with Opus 4.5 responses, can you adjust my prompts?"
+```
+
+The skill continues to help even after initial migration, adjusting prompts and configuration based on observed behavior.
+
+## Configuration
+
+No additional configuration required. The skill activates automatically when you mention Opus 4.5 migration.
+
+## Learn More
+
+For Opus 4.5 best practices, see:
+- [Claude 4 Prompting Guide](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-4-best-practices)
+
+## Details
+
+<Accordion title="Plugin Information">
+  **Name:** claude-opus-4-5-migration
+  
+  **Type:** Skill
+  
+  **Author:** William Hu (whu@anthropic.com)
+  
+  **Version:** 1.0.0
+</Accordion>
+
+## Troubleshooting
+
+### Migration didn't update all files
+
+The skill focuses on main configuration and API integration files. For comprehensive updates:
+
+```bash
+"Search the entire codebase for references to claude-sonnet-4 and update them"
+```
+
+### Still seeing deprecated model warnings
+
+Ensure beta headers are properly configured:
+
+```bash
+"Check all API clients have the correct beta headers for Opus 4.5"
+```

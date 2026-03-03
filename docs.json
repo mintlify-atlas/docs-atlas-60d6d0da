@@ -74,13 +74,18 @@
             "group": "Bundled Plugins",
             "pages": [
               "plugins/bundled/agent-sdk-dev",
+              "plugins/bundled/claude-opus-4-5-migration",
               "plugins/bundled/code-review",
               "plugins/bundled/commit-commands",
+              "plugins/bundled/explanatory-output-style",
               "plugins/bundled/feature-dev",
               "plugins/bundled/frontend-design",
               "plugins/bundled/hookify",
+              "plugins/bundled/learning-output-style",
               "plugins/bundled/plugin-dev",
-              "plugins/bundled/pr-review-toolkit"
+              "plugins/bundled/pr-review-toolkit",
+              "plugins/bundled/ralph-wiggum",
+              "plugins/bundled/security-guidance"
             ]
           },
           {

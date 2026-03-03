@@ -1,0 +1,186 @@
+---
+title: Explanatory Output Style
+description: Add educational insights about implementation choices and codebase patterns
+---
+
+Recreates the deprecated Explanatory output style as a SessionStart hook, providing educational context about your code.
+
+<Warning>
+  This plugin adds additional instructions and output to every session, which will increase token usage and costs.
+</Warning>
+
+## Overview
+
+The Explanatory Output Style plugin automatically enhances Claude's responses with educational insights about:
+
+- Implementation choices and trade-offs
+- Codebase patterns and conventions
+- Design decisions specific to your project
+- Why certain approaches were chosen
+
+## Installation
+
+This plugin is bundled with Claude Code. To enable it:
+
+```bash
+/plugin enable explanatory-output-style
+```
+
+## How It Works
+
+The plugin uses a **SessionStart hook** to inject additional context at the beginning of every session. This instructs Claude to provide brief educational explanations before and after writing code.
+
+### Insight Format
+
+Educational insights appear in this format:
+
+```
+★ Insight ─────────────────────────────────────
+[2-3 key educational points]
+─────────────────────────────────────────────────
+```
+
+## What You'll Learn
+
+<CardGroup cols={2}>
+  <Card title="Implementation Choices" icon="code-branch">
+    Why specific approaches were selected for your codebase
+  </Card>
+  
+  <Card title="Patterns & Conventions" icon="diagram-project">
+    Existing patterns in your code and how they're applied
+  </Card>
+  
+  <Card title="Trade-offs" icon="scale-balanced">
+    Design decisions and their implications
+  </Card>
+  
+  <Card title="Codebase-Specific Details" icon="file-code">
+    Insights tailored to your project, not generic advice
+  </Card>
+</CardGroup>
+
+## Example Interaction
+
+When you ask Claude to implement a feature, you'll see:
+
+```bash
+"Add authentication to the API"
+```
+
+**Claude's response:**
+
+```
+★ Insight ─────────────────────────────────────
+• Your codebase uses JWT tokens stored in httpOnly cookies
+  for security (prevents XSS token theft)
+• The middleware pattern in auth/middleware.ts follows your
+  existing approach for request preprocessing
+• Session timeout is set to 24h to match your user
+  experience requirements from config/app.ts
+─────────────────────────────────────────────────
+
+Let me implement the authentication middleware...
+
+[Code implementation]
+
+★ Insight ─────────────────────────────────────
+• Added rate limiting on login endpoint to prevent brute
+  force attacks (consistent with your API security policy)
+• Error messages intentionally vague ("Invalid credentials")
+  to avoid username enumeration attacks
+─────────────────────────────────────────────────
+```
+
+## Migration from Output Styles
+
+This plugin replaces the deprecated `outputStyle` setting:
+
+### Before (deprecated)
+
+```json
+{
+  "outputStyle": "Explanatory"
+}
+```
+
+### After (current)
+
+```bash
+/plugin enable explanatory-output-style
+```
+
+## SessionStart Hook Pattern
+
+This plugin demonstrates the SessionStart hook pattern, which is:
+
+- More flexible than the old output styles
+- Distributable through plugins
+- Similar to CLAUDE.md but for runtime behavior
+
+<Note>
+  For tasks beyond software development, use [subagents](/concepts/agents) instead of SessionStart hooks. Subagents change the system prompt, while SessionStart hooks add to it.
+</Note>
+
+## Managing the Plugin
+
+<Tabs>
+  <Tab title="Disable">
+    Keep installed but turn off temporarily:
+    
+    ```bash
+    /plugin disable explanatory-output-style
+    ```
+  </Tab>
+  
+  <Tab title="Uninstall">
+    Remove completely from your system:
+    
+    ```bash
+    /plugin uninstall explanatory-output-style
+    ```
+  </Tab>
+  
+  <Tab title="Customize">
+    Create a local copy to personalize:
+    
+    ```bash
+    "Create a custom version of the explanatory-output-style plugin
+    that focuses more on security considerations"
+    ```
+  </Tab>
+</Tabs>
+
+## Token Usage
+
+The plugin adds approximately:
+- **~200 tokens** to system prompt (per session)
+- **~50-150 tokens** per insight shown
+
+For a typical 20-turn session with 5 insights: **~450-950 additional tokens**
+
+## Details
+
+<Accordion title="Plugin Information">
+  **Name:** explanatory-output-style
+  
+  **Type:** SessionStart Hook
+  
+  **Author:** Dickson Tsai (dickson@anthropic.com)
+  
+  **Version:** 1.0.0
+  
+  **Hook File:** `hooks-handlers/session-start.sh`
+</Accordion>
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Learning Output Style" icon="graduation-cap" href="/plugins/bundled/learning-output-style">
+    Interactive learning with code contributions
+  </Card>
+  
+  <Card title="Plugin Development" icon="puzzle-piece" href="/plugins/development/getting-started">
+    Create your own SessionStart hooks
+  </Card>
+</CardGroup>
