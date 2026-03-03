@@ -1,0 +1,248 @@
+---
+title: Agent SDK Dev Plugin
+description: Create and verify Claude Agent SDK applications in Python and TypeScript
+---
+
+The Agent SDK Development Plugin streamlines the entire lifecycle of building Agent SDK applications, from initial scaffolding to verification against best practices.
+
+## Overview
+
+This plugin helps you quickly start new Agent SDK projects with the latest SDK versions and ensures your applications follow official documentation patterns.
+
+**Key Features:**
+- Interactive project setup with clarifying questions
+- Automatic SDK version checking and installation
+- Language support for TypeScript and Python
+- Built-in verification agents
+- Working examples tailored to your use case
+
+## Command: /new-sdk-app
+
+Interactive command that guides you through creating a new Claude Agent SDK application.
+
+### What It Does
+
+<Steps>
+  <Step title="Asks Clarifying Questions">
+    - Language choice (TypeScript or Python)
+    - Project name
+    - Agent type (coding, business, custom)
+    - Starting point (minimal, basic, or specific example)
+    - Tooling preferences (npm/yarn/pnpm or pip/poetry)
+  </Step>
+  
+  <Step title="Sets Up Project">
+    - Checks for and installs the latest SDK version
+    - Creates all necessary project files and configuration
+    - Sets up proper environment files (.env.example, .gitignore)
+    - Provides a working example tailored to your use case
+  </Step>
+  
+  <Step title="Verifies Setup">
+    - Runs type checking (TypeScript) or syntax validation (Python)
+    - Automatically verifies the setup using the appropriate verifier agent
+  </Step>
+</Steps>
+
+### Usage
+
+With a project name:
+
+```bash
+/new-sdk-app my-project-name
+```
+
+Or let the command ask interactively:
+
+```bash
+/new-sdk-app
+```
+
+### Example Workflow
+
+```bash
+/new-sdk-app customer-support-agent
+```
+
+The command will ask:
+1. **Language**: TypeScript or Python?
+2. **Agent type**: Coding, business, or custom?
+3. **Starting point**: Minimal, basic, or specific example?
+4. **Tooling**: npm/yarn/pnpm (TS) or pip/poetry (Python)?
+
+Then it will:
+- Create the project directory
+- Install the latest SDK version
+- Set up TypeScript/Python environment
+- Create a working example
+- Verify the setup automatically
+
+## Agents
+
+### agent-sdk-verifier-ts
+
+Thoroughly verifies TypeScript Agent SDK applications for correct setup and best practices.
+
+**Verification Checks:**
+- SDK installation and version
+- TypeScript configuration (tsconfig.json)
+- Correct SDK usage and patterns
+- Type safety and imports
+- Agent initialization and configuration
+- Environment and security (.env, API keys)
+- Error handling and functionality
+- Documentation completeness
+
+**When to Use:**
+- After creating a new TypeScript SDK project
+- After modifying an existing TypeScript SDK application
+- Before deploying a TypeScript SDK application
+
+**How to Trigger:**
+
+The agent runs automatically after `/new-sdk-app` creates a TypeScript project, or you can trigger it manually:
+
+```
+"Verify my TypeScript Agent SDK application"
+"Check if my SDK app follows best practices"
+```
+
+**Output:**
+- Overall status (PASS / PASS WITH WARNINGS / FAIL)
+- Critical issues that prevent functionality
+- Warnings about suboptimal patterns
+- List of passed checks
+- Specific recommendations with SDK documentation references
+
+### agent-sdk-verifier-py
+
+Thoroughly verifies Python Agent SDK applications for correct setup and best practices.
+
+**Verification Checks:**
+- SDK installation and version
+- Python environment setup (requirements.txt, pyproject.toml)
+- Correct SDK usage and patterns
+- Agent initialization and configuration
+- Environment and security (.env, API keys)
+- Error handling and functionality
+- Documentation completeness
+
+**When to Use:**
+- After creating a new Python SDK project
+- After modifying an existing Python SDK application
+- Before deploying a Python SDK application
+
+**How to Trigger:**
+
+The agent runs automatically after `/new-sdk-app` creates a Python project, or manually:
+
+```
+"Verify my Python Agent SDK application"
+"Check if my SDK app follows best practices"
+```
+
+**Output:**
+- Overall status (PASS / PASS WITH WARNINGS / FAIL)
+- Critical issues that prevent functionality
+- Warnings about suboptimal patterns
+- List of passed checks
+- Specific recommendations with SDK documentation references
+
+## Complete Workflow Example
+
+Here's a typical workflow using this plugin:
+
+<Steps>
+  <Step title="Create Project">
+    ```bash
+    /new-sdk-app code-reviewer-agent
+    ```
+  </Step>
+  
+  <Step title="Answer Questions">
+    ```
+    Language: TypeScript
+    Agent type: Coding agent (code review)
+    Starting point: Basic agent with common features
+    Tooling: npm
+    ```
+  </Step>
+  
+  <Step title="Automatic Verification">
+    The command automatically runs `agent-sdk-verifier-ts` to ensure everything is correctly set up.
+  </Step>
+  
+  <Step title="Start Developing">
+    ```bash
+    # Set your API key
+    echo "ANTHROPIC_API_KEY=your_key_here" > .env
+    
+    # Run your agent
+    npm start
+    ```
+  </Step>
+  
+  <Step title="Verify After Changes">
+    ```
+    "Verify my SDK application"
+    ```
+  </Step>
+</Steps>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Use Latest SDK" icon="sync">
+    `/new-sdk-app` checks for and installs the latest version automatically
+  </Card>
+  <Card title="Verify Before Deploy" icon="shield-check">
+    Run the verifier agent before deploying to production
+  </Card>
+  <Card title="Secure API Keys" icon="lock">
+    Never commit `.env` files or hardcode API keys
+  </Card>
+  <Card title="Follow Documentation" icon="book">
+    The verifier agents check against official SDK patterns
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+### Type Errors in TypeScript Project
+
+**Issue**: TypeScript project has type errors after creation
+
+**Solution**:
+- The `/new-sdk-app` command runs type checking automatically
+- If errors persist, check that you're using the latest SDK version
+- Verify your `tsconfig.json` matches SDK requirements
+
+### Python Import Errors
+
+**Issue**: Cannot import from `claude_agent_sdk`
+
+**Solution**:
+- Ensure you've installed dependencies: `pip install -r requirements.txt`
+- Activate your virtual environment if using one
+- Check that the SDK is installed: `pip show claude-agent-sdk`
+
+### Verification Fails with Warnings
+
+**Issue**: Verifier agent reports warnings
+
+**Solution**:
+- Review the specific warnings in the report
+- Check the SDK documentation references provided
+- Warnings don't prevent functionality but indicate areas for improvement
+
+## Resources
+
+- [Agent SDK Overview](https://docs.claude.com/en/api/agent-sdk/overview)
+- [TypeScript SDK Reference](https://docs.claude.com/en/api/agent-sdk/typescript)
+- [Python SDK Reference](https://docs.claude.com/en/api/agent-sdk/python)
+- [Agent SDK Examples](https://docs.claude.com/en/api/agent-sdk/examples)
+
+## Plugin Information
+
+**Author**: Ashwin Bhat (ashwin@anthropic.com)  
+**Version**: 1.0.0

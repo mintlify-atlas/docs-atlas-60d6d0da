@@ -1,0 +1,302 @@
+---
+title: Code Review Plugin
+description: Automated PR code review using multiple specialized agents with confidence-based scoring
+---
+
+The Code Review Plugin automates pull request review by launching multiple agents in parallel to independently audit changes from different perspectives. It uses confidence scoring to filter out false positives, ensuring only high-quality, actionable feedback is posted.
+
+## Overview
+
+This plugin runs comprehensive, multi-agent PR reviews that focus on:
+- CLAUDE.md guideline compliance
+- Bug detection in changes
+- Historical context analysis
+- Confidence-based issue filtering (threshold: 80)
+
+**Key Feature**: Only issues with 80+ confidence scores are reported, eliminating noise from false positives.
+
+## Command: /code-review
+
+Performs automated code review on a pull request using multiple specialized agents.
+
+### What It Does
+
+<Steps>
+  <Step title="Pre-flight Checks">
+    Skips review if PR is:
+    - Closed or draft
+    - Trivial or automated
+    - Already reviewed
+  </Step>
+  
+  <Step title="Context Gathering">
+    - Collects relevant CLAUDE.md guideline files
+    - Summarizes pull request changes
+  </Step>
+  
+  <Step title="Parallel Agent Review">
+    Launches 4 independent agents:
+    - **Agents #1 & #2**: Audit for CLAUDE.md compliance
+    - **Agent #3**: Scan for obvious bugs in changes
+    - **Agent #4**: Analyze git blame/history for context
+  </Step>
+  
+  <Step title="Score and Filter">
+    - Each issue scored 0-100 for confidence
+    - Issues below 80 confidence filtered out
+  </Step>
+  
+  <Step title="Output Results">
+    - Terminal output by default
+    - Or PR comment with `--comment` flag
+  </Step>
+</Steps>
+
+### Usage
+
+Run locally (outputs to terminal):
+
+```bash
+/code-review
+```
+
+Post review as PR comment:
+
+```bash
+/code-review --comment
+```
+
+### Example Workflow
+
+```bash
+# On a PR branch, run locally:
+/code-review
+
+# Review the findings in terminal
+# Make any necessary fixes
+
+# Post review as PR comment:
+/code-review --comment
+```
+
+## Features
+
+### Multi-Agent Architecture
+
+- **Multiple Independent Agents**: Each agent reviews from a different perspective
+- **Redundancy**: Two agents check CLAUDE.md compliance for thoroughness
+- **Specialization**: Dedicated agents for bugs, guidelines, and context
+- **Parallel Execution**: All agents run simultaneously for speed
+
+### Confidence Scoring
+
+Each issue is independently scored:
+
+| Score | Meaning |
+|-------|----------|
+| 0 | Not confident, false positive |
+| 25 | Somewhat confident, might be real |
+| 50 | Moderately confident, real but minor |
+| 75 | Highly confident, real and important |
+| 100 | Absolutely certain, definitely real |
+
+**Threshold**: Only issues ≥ 80 are reported.
+
+### Filtered False Positives
+
+- Pre-existing issues not introduced in PR
+- Code that looks like a bug but isn't
+- Pedantic nitpicks
+- Issues linters will catch
+- General quality issues (unless in CLAUDE.md)
+- Issues with lint ignore comments
+
+### Review Comment Format
+
+```markdown
+## Code review
+
+Found 3 issues:
+
+1. Missing error handling for OAuth callback (CLAUDE.md says "Always handle OAuth errors")
+
+https://github.com/owner/repo/blob/abc123.../src/auth.ts#L67-L72
+
+2. Memory leak: OAuth state not cleaned up (bug due to missing cleanup in finally block)
+
+https://github.com/owner/repo/blob/abc123.../src/auth.ts#L88-L95
+
+3. Inconsistent naming pattern (src/conventions/CLAUDE.md says "Use camelCase for functions")
+
+https://github.com/owner/repo/blob/abc123.../src/utils.ts#L23-L28
+```
+
+## Best Practices
+
+### Using /code-review
+
+<CardGroup cols={2}>
+  <Card title="Maintain CLAUDE.md" icon="file-lines">
+    Clear CLAUDE.md files lead to better compliance checking
+  </Card>
+  <Card title="Trust the Threshold" icon="shield-check">
+    The 80+ confidence threshold filters false positives effectively
+  </Card>
+  <Card title="Run on All PRs" icon="code-pull-request">
+    Use for all non-trivial pull requests
+  </Card>
+  <Card title="Starting Point" icon="magnifying-glass">
+    Use agent findings as a starting point for human review
+  </Card>
+</CardGroup>
+
+### When to Use
+
+- All pull requests with meaningful changes
+- PRs touching critical code paths
+- PRs from multiple contributors
+- PRs where guideline compliance matters
+
+### When Not to Use
+
+- Closed or draft PRs (automatically skipped anyway)
+- Trivial automated PRs (automatically skipped)
+- Urgent hotfixes requiring immediate merge
+- PRs already reviewed (automatically skipped)
+
+## Workflow Integration
+
+### Standard PR Review
+
+<Steps>
+  <Step title="Create PR">
+    Push your changes and create the pull request
+  </Step>
+  
+  <Step title="Run Local Review">
+    ```bash
+    /code-review
+    ```
+    Review feedback in terminal
+  </Step>
+  
+  <Step title="Fix Issues">
+    Address any high-confidence issues found
+  </Step>
+  
+  <Step title="Post as Comment">
+    ```bash
+    /code-review --comment
+    ```
+    Share findings with team
+  </Step>
+</Steps>
+
+### CI/CD Integration
+
+```yaml
+# .github/workflows/pr-review.yml
+name: Automated PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run Code Review
+        run: |
+          claude /code-review --comment
+```
+
+## Requirements
+
+- Git repository with GitHub integration
+- GitHub CLI (`gh`) installed and authenticated
+- CLAUDE.md files (optional but recommended for guideline checking)
+
+## Configuration
+
+### Adjusting Confidence Threshold
+
+The default threshold is 80. To adjust, modify `commands/code-review.md`:
+
+```markdown
+Filter out any issues with a score less than 80.
+```
+
+Change `80` to your preferred threshold (0-100).
+
+### Customizing Review Focus
+
+Edit `commands/code-review.md` to add or modify agent tasks:
+- Add security-focused agents
+- Add performance analysis agents
+- Add accessibility checking agents
+- Add documentation quality checks
+
+## Troubleshooting
+
+### Review Takes Too Long
+
+**Issue**: Agents are slow on large PRs
+
+**Solution**:
+- Normal for large changes - agents run in parallel
+- 4 independent agents ensure thoroughness
+- Consider splitting large PRs into smaller ones
+
+### Too Many False Positives
+
+**Issue**: Review flags issues that aren't real
+
+**Solution**:
+- Default threshold is 80 (already filters most false positives)
+- Make CLAUDE.md more specific about what matters
+- Consider if the flagged issue is actually valid
+
+### No Review Comment Posted
+
+**Issue**: `/code-review` runs but no comment appears
+
+**Check if**:
+- PR is closed (reviews skipped)
+- PR is draft (reviews skipped)
+- PR is trivial/automated (reviews skipped)
+- PR already has review (reviews skipped)
+- No issues scored ≥ 80 (no comment needed)
+
+### GitHub CLI Not Working
+
+**Issue**: `gh` commands fail
+
+**Solution**:
+- Install GitHub CLI: `brew install gh` (macOS) or [GitHub CLI installation](https://cli.github.com/)
+- Authenticate: `gh auth login`
+- Verify repository has GitHub remote
+
+## Tips
+
+<Tip>
+  **Write specific CLAUDE.md files**: Clear guidelines = better reviews
+</Tip>
+
+<Tip>
+  **Include context in PRs**: Helps agents understand intent
+</Tip>
+
+<Tip>
+  **Use confidence scores**: Issues ≥ 80 are usually correct
+</Tip>
+
+<Tip>
+  **Iterate on guidelines**: Update CLAUDE.md based on review patterns
+</Tip>
+
+## Plugin Information
+
+**Author**: Boris Cherny (boris@anthropic.com)  
+**Version**: 1.0.0

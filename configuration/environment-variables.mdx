@@ -1,0 +1,538 @@
+---
+title: Environment Variables
+description: Configure Claude Code using environment variables for dynamic and deployment-specific settings
+---
+
+Environment variables provide a flexible way to configure Claude Code without modifying settings files, ideal for CI/CD, containerized deployments, and per-environment configuration.
+
+## Core Variables
+
+### Authentication
+
+```bash
+# Anthropic API key
+export ANTHROPIC_API_KEY="sk-ant-..."
+
+# API base URL (for proxy or custom endpoints)
+export ANTHROPIC_BASE_URL="https://api.anthropic.com"
+```
+
+**Usage**:
+```bash
+ANTHROPIC_API_KEY=sk-ant-... claude
+```
+
+### Model Configuration
+
+```bash
+# Default model
+export CLAUDE_CODE_MODEL="claude-sonnet-4.6"
+
+# Temperature override (0.0-1.0)
+export CLAUDE_CODE_TEMPERATURE="0.7"
+```
+
+**Available models**:
+- `claude-sonnet-4.6` (default)
+- `claude-opus-4.6`
+- `claude-sonnet-4.5`
+
+### Account Information
+
+For SDK users to provide account context:
+
+```bash
+export CLAUDE_CODE_ACCOUNT_UUID="..."
+export CLAUDE_CODE_USER_EMAIL="user@example.com"
+export CLAUDE_CODE_ORGANIZATION_UUID="..."
+```
+
+Eliminates race condition in early telemetry events.
+
+## Feature Flags
+
+### Simple Mode
+
+Minimal Claude Code with reduced features for faster startup:
+
+```bash
+export CLAUDE_CODE_SIMPLE=true
+```
+
+**Disables**:
+- Skills
+- Session memory
+- Custom agents
+- MCP tools
+- Attachments  
+- Hooks
+- CLAUDE.md loading
+
+**When to use**: CI/CD, quick tasks, resource-constrained environments
+
+### Context Window
+
+Control context window size:
+
+```bash
+# Disable 1M context window (use 200K)
+export CLAUDE_CODE_DISABLE_1M_CONTEXT=true
+```
+
+**When to use**: Faster responses, lower costs, simpler tasks
+
+### Background Tasks
+
+Disable background task functionality:
+
+```bash
+export CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=true
+```
+
+**Disables**:
+- Agent backgrounding
+- Ctrl+B shortcut
+- Task parallelization
+
+**When to use**: Headless mode, CI/CD, debugging
+
+### Experimental Features
+
+Enable experimental features:
+
+```bash
+# Agent Teams (multi-agent collaboration)
+export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=true
+
+# Disable experimental beta headers
+export CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=true
+```
+
+### MCP Servers
+
+Control MCP server availability:
+
+```bash
+# Disable claude.ai MCP servers
+export ENABLE_CLAUDEAI_MCP_SERVERS=false
+```
+
+## System Configuration
+
+### Temporary Directory
+
+Custom temp directory for internal files:
+
+```bash
+export CLAUDE_CODE_TMPDIR="/custom/tmp"
+```
+
+**When to use**: Custom temp locations, containerized environments, limited disk space
+
+### Shell Configuration
+
+Control bash tool behavior:
+
+```bash
+# Skip login shell for better performance
+export CLAUDE_BASH_NO_LOGIN=true
+```
+
+**Effect**: Bash commands use `-l` flag less frequently (enabled by default when shell snapshot available)
+
+### Plugin Configuration
+
+Plugin system settings:
+
+```bash
+# Git clone timeout for plugins (milliseconds)
+export CLAUDE_CODE_PLUGIN_GIT_TIMEOUT_MS=120000  # 2 minutes
+```
+
+**Default**: 120000ms (changed from 30000ms in v2.1.51)
+
+## CI/CD Configuration
+
+Optimal settings for continuous integration:
+
+```bash
+#!/bin/bash
+# ci-setup.sh
+
+# Authentication
+export ANTHROPIC_API_KEY="$CI_API_KEY"
+
+# Fast, minimal mode
+export CLAUDE_CODE_SIMPLE=true
+export CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=true
+export CLAUDE_CODE_DISABLE_1M_CONTEXT=true
+
+# Use faster model
+export CLAUDE_CODE_MODEL="claude-sonnet-4.6"
+
+# Disable interactive features
+export CI=true
+
+# Run Claude in headless mode
+claude -p "Run linting and tests" --no-stream
+```
+
+## Docker Configuration
+
+Environment variables for containerized deployments:
+
+### Dockerfile
+
+```dockerfile
+FROM node:18-alpine
+
+# Install Claude Code
+RUN npm install -g @anthropic-ai/claude-code
+
+# Set environment defaults
+ENV CLAUDE_CODE_SIMPLE=true \
+    CLAUDE_CODE_TMPDIR=/tmp/claude \
+    CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=true
+
+# Runtime variables via docker run
+# docker run -e ANTHROPIC_API_KEY=$API_KEY ...
+
+CMD ["claude"]
+```
+
+### docker-compose.yml
+
+```yaml
+version: '3.8'
+
+services:
+  claude-code:
+    image: claude-code:latest
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - CLAUDE_CODE_MODEL=claude-sonnet-4.6
+      - CLAUDE_CODE_SIMPLE=true
+      - CLAUDE_CODE_TMPDIR=/tmp/claude
+    volumes:
+      - ./project:/workspace
+    working_dir: /workspace
+```
+
+## Environment-Specific Configs
+
+### Development
+
+```bash
+# .env.development
+ANTHROPIC_API_KEY=sk-ant-dev-...
+CLAUDE_CODE_MODEL=claude-opus-4.6
+CLAUDE_CODE_TEMPERATURE=0.8
+CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=true
+```
+
+### Staging
+
+```bash
+# .env.staging
+ANTHROPIC_API_KEY=sk-ant-staging-...
+CLAUDE_CODE_MODEL=claude-sonnet-4.6
+CLAUDE_CODE_SIMPLE=false
+CLAUDE_CODE_DISABLE_1M_CONTEXT=true
+```
+
+### Production
+
+```bash
+# .env.production
+ANTHROPIC_API_KEY=sk-ant-prod-...
+CLAUDE_CODE_MODEL=claude-sonnet-4.6
+CLAUDE_CODE_SIMPLE=true
+CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=true
+CLAUDE_CODE_DISABLE_1M_CONTEXT=true
+```
+
+### Load with dotenv
+
+```bash
+# Install dotenv
+npm install -g dotenv-cli
+
+# Load environment-specific config
+dotenv -e .env.development -- claude
+dotenv -e .env.production -- claude -p "Deploy to production"
+```
+
+## Proxy Configuration
+
+Configure HTTP/HTTPS proxies:
+
+```bash
+# HTTP proxy
+export HTTP_PROXY="http://proxy.example.com:8080"
+export HTTPS_PROXY="https://proxy.example.com:8443"
+
+# No proxy for certain domains
+export NO_PROXY="localhost,127.0.0.1,.example.com"
+
+# Proxy authentication
+export HTTP_PROXY="http://user:pass@proxy.example.com:8080"
+```
+
+Or via settings.json:
+```json
+{
+  "proxy": {
+    "http": "http://proxy.example.com:8080",
+    "https": "https://proxy.example.com:8443",
+    "noProxy": ["localhost", ".example.com"]
+  }
+}
+```
+
+## AWS Configuration
+
+For Bedrock users:
+
+```bash
+# AWS credentials
+export AWS_ACCESS_KEY_ID="..."
+export AWS_SECRET_ACCESS_KEY="..."
+export AWS_REGION="us-east-1"
+
+# AWS session token (if using temporary credentials)
+export AWS_SESSION_TOKEN="..."
+
+# AWS profile
+export AWS_PROFILE="bedrock-profile"
+```
+
+## GCP Configuration
+
+For Vertex AI users:
+
+```bash
+# GCP project
+export GCP_PROJECT_ID="my-project"
+
+# Service account key
+export GOOGLE_APPLICATION_CREDENTIALS="/path/to/key.json"
+
+# Vertex AI location
+export GCP_LOCATION="us-central1"
+```
+
+## Verification
+
+Check which environment variables are active:
+
+```bash
+# View all Claude-related variables
+env | grep CLAUDE
+
+# Check specific variable
+echo $ANTHROPIC_API_KEY
+
+# Test configuration
+claude doctor
+```
+
+## Precedence
+
+Configuration precedence (highest to lowest):
+
+1. Command-line flags: `claude --model opus-4.6`
+2. Environment variables: `CLAUDE_CODE_MODEL=opus-4.6`
+3. Local settings: `.claude/settings.local.json`
+4. Project settings: `.claude/settings.json`
+5. User settings: `~/.claude/settings.json`
+6. Managed settings: `~/.claude/managed-settings.json`
+7. Defaults
+
+**Example**:
+```bash
+# Settings file
+# .claude/settings.json: {"model": "sonnet-4.6"}
+
+# Environment overrides settings file
+export CLAUDE_CODE_MODEL="opus-4.6"
+
+# Command flag overrides everything
+claude --model sonnet-4.5
+# Result: Uses sonnet-4.5
+```
+
+## Security Best Practices
+
+<Warning>
+  Never commit API keys or secrets to version control. Use environment variables or secret management services.
+</Warning>
+
+### Secret Management
+
+**Don't**:
+```bash
+# .env (committed to git)
+ANTHROPIC_API_KEY=sk-ant-real-key-123  # BAD!
+```
+
+**Do**:
+```bash
+# .env.example (committed to git)
+ANTHROPIC_API_KEY=sk-ant-your-key-here
+
+# .env (gitignored)
+ANTHROPIC_API_KEY=sk-ant-real-key-123  # GOOD
+```
+
+### Use Secret Managers
+
+**AWS Secrets Manager**:
+```bash
+#!/bin/bash
+export ANTHROPIC_API_KEY=$(aws secretsmanager get-secret-value \
+  --secret-id claude-api-key \
+  --query SecretString \
+  --output text)
+
+claude
+```
+
+**HashiCorp Vault**:
+```bash
+#!/bin/bash
+export ANTHROPIC_API_KEY=$(vault kv get -field=api_key secret/claude)
+claude
+```
+
+**1Password CLI**:
+```bash
+#!/bin/bash
+export ANTHROPIC_API_KEY=$(op read "op://vault/claude/api_key")
+claude
+```
+
+## Shell Integration
+
+### Bash
+
+Add to `~/.bashrc` or `~/.bash_profile`:
+
+```bash
+# Claude Code configuration
+export ANTHROPIC_API_KEY="your-key"
+export CLAUDE_CODE_MODEL="claude-sonnet-4.6"
+export CLAUDE_CODE_SIMPLE=false
+
+# Helper function
+function claude-dev() {
+  CLAUDE_CODE_MODEL="opus-4.6" claude "$@"
+}
+
+function claude-quick() {
+  CLAUDE_CODE_SIMPLE=true claude -p "$@"
+}
+```
+
+### Zsh
+
+Add to `~/.zshrc`:
+
+```bash
+# Claude Code
+export ANTHROPIC_API_KEY="your-key"
+
+# Aliases
+alias cc="claude"
+alias ccq="CLAUDE_CODE_SIMPLE=true claude -p"
+alias ccd="CLAUDE_CODE_MODEL=opus-4.6 claude"
+```
+
+### Fish
+
+Add to `~/.config/fish/config.fish`:
+
+```fish
+# Claude Code
+set -x ANTHROPIC_API_KEY "your-key"
+set -x CLAUDE_CODE_MODEL "claude-sonnet-4.6"
+
+# Functions
+function claude-quick
+    env CLAUDE_CODE_SIMPLE=true claude -p $argv
+end
+```
+
+## Troubleshooting
+
+### Variables Not Working
+
+**Issue**: Environment variables seem ignored
+
+**Solutions**:
+- Verify variable is exported: `export VAR=value` not `VAR=value`
+- Check spelling and case (case-sensitive)
+- Verify in current shell: `echo $CLAUDE_CODE_MODEL`
+- Restart shell after modifying config files
+
+### API Key Not Found
+
+**Issue**: Authentication fails despite setting `ANTHROPIC_API_KEY`
+
+**Solutions**:
+- Verify key format: starts with `sk-ant-`
+- Check for spaces: `"sk-ant-..."` not `" sk-ant-..."`
+- Verify export: `export` not just assignment
+- Check key is valid: test with API request
+
+### Wrong Configuration Used
+
+**Issue**: Claude uses different config than expected
+
+**Solutions**:
+- Check precedence order
+- Verify settings files aren't overriding
+- Use `claude doctor` to see active config
+- Check for managed settings
+
+## Reference
+
+### Complete Variable List
+
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `ANTHROPIC_API_KEY` | string | - | API authentication key |
+| `ANTHROPIC_BASE_URL` | string | `https://api.anthropic.com` | API endpoint |
+| `CLAUDE_CODE_MODEL` | string | `claude-sonnet-4.6` | Default model |
+| `CLAUDE_CODE_TEMPERATURE` | number | - | Temperature override |
+| `CLAUDE_CODE_SIMPLE` | boolean | `false` | Enable simple mode |
+| `CLAUDE_CODE_DISABLE_1M_CONTEXT` | boolean | `false` | Disable 1M context |
+| `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS` | boolean | `false` | Disable background tasks |
+| `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` | boolean | `false` | Enable agent teams |
+| `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS` | boolean | `false` | Disable beta features |
+| `ENABLE_CLAUDEAI_MCP_SERVERS` | boolean | `true` | Enable claude.ai MCP |
+| `CLAUDE_CODE_TMPDIR` | string | system temp | Custom temp directory |
+| `CLAUDE_BASH_NO_LOGIN` | boolean | auto | Skip login shell |
+| `CLAUDE_CODE_PLUGIN_GIT_TIMEOUT_MS` | number | `120000` | Plugin git timeout |
+| `CLAUDE_CODE_ACCOUNT_UUID` | string | - | Account identifier |
+| `CLAUDE_CODE_USER_EMAIL` | string | - | User email |
+| `CLAUDE_CODE_ORGANIZATION_UUID` | string | - | Organization ID |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Settings" icon="sliders" href="/configuration/settings">
+    Configure via settings files
+  </Card>
+  
+  <Card title="Project Config" icon="folder" href="/configuration/project-config">
+    Set up project-specific configuration
+  </Card>
+  
+  <Card title="Installation" icon="download" href="/installation">
+    Installation and setup
+  </Card>
+  
+  <Card title="Task Automation" icon="robot" href="/guides/task-automation">
+    Automate with commands and hooks
+  </Card>
+</CardGroup>

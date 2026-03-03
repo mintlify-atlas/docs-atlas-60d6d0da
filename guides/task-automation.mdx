@@ -1,0 +1,752 @@
+---
+title: Task Automation
+description: Automate workflows with custom commands, agents, skills, and hooks
+---
+
+Claude Code's plugin system enables powerful workflow automation through custom slash commands, specialized agents, skills, and event hooks. This guide shows you how to create and use these automation tools.
+
+## Plugin System Overview
+
+Claude Code plugins extend functionality with:
+
+- **Commands**: Slash commands for quick workflows
+- **Agents**: Specialized background workers
+- **Skills**: Reusable knowledge modules
+- **Hooks**: Event-driven automation
+- **MCP Servers**: External tool integrations
+
+## Custom Slash Commands
+
+Create project-specific commands in `.claude/commands/`:
+
+### Basic Command Structure
+
+**File**: `.claude/commands/deploy.md`
+
+```markdown
+---
+description: Deploy application to production
+allowed-tools: Bash(npm:*), Bash(git:*)
+---
+
+# Deployment Workflow
+
+1. Ensure we're on the main branch
+2. Run tests: !`npm test`
+3. Build production assets: !`npm run build`
+4. Deploy: !`npm run deploy`
+5. Create git tag with version from package.json
+6. Push tag to remote
+
+If any step fails, stop and report the error.
+```
+
+**Usage**:
+```
+> /deploy
+```
+
+### Command Frontmatter
+
+```yaml
+---
+# Required
+description: Short description shown in command list
+
+# Optional
+argument-hint: Expected argument format
+allowed-tools: ["Bash(npm:*)", "Read", "Write"]
+---
+```
+
+**Example with arguments**:
+```markdown
+---
+description: Create a new React component
+argument-hint: ComponentName
+---
+
+Create a new React component named $ARGUMENTS:
+
+1. Create file: src/components/$ARGUMENTS.jsx
+2. Generate component boilerplate following our patterns
+3. Create test file: src/components/$ARGUMENTS.test.jsx
+4. Export from src/components/index.js
+```
+
+### Inline Command Execution
+
+Use `!` to execute shell commands inline:
+
+```markdown
+Current branch: !`git branch --show-current`
+Last commit: !`git log -1 --oneline`
+Test status: !`npm test`
+```
+
+Results are included in the prompt.
+
+### Argument Handling
+
+**Simple substitution**:
+```markdown
+Create feature: $ARGUMENTS
+```
+
+**Indexed arguments**:
+```markdown
+First arg: $ARGUMENTS[0]
+Second arg: $ARGUMENTS[1]
+```
+
+**Example**:
+```markdown
+---
+description: Create model and migration
+argument-hint: ModelName
+---
+
+Create a $ARGUMENTS[0] model with migration:
+
+1. Generate model: !`rails generate model $ARGUMENTS[0]`
+2. Edit migration to add fields
+3. Run migration: !`rails db:migrate`
+```
+
+Usage: `/create-model User`
+
+### Real-World Command Examples
+
+#### Test Runner
+
+```markdown
+---
+description: Run tests with coverage
+allowed-tools: Bash(npm test:*)
+---
+
+Run test suite with coverage:
+
+!`npm test -- --coverage`
+
+If tests fail, show failures and suggest fixes.
+```
+
+#### Database Reset
+
+```markdown
+---
+description: Reset development database
+allowed-tools: Bash(npm:*), Bash(rm:*)
+---
+
+Reset the development database:
+
+1. Confirm with user first (this is destructive)
+2. Drop database: !`npm run db:drop`
+3. Create database: !`npm run db:create`
+4. Run migrations: !`npm run db:migrate`
+5. Seed data: !`npm run db:seed`
+
+Report success or any errors encountered.
+```
+
+#### PR Creation
+
+```markdown
+---
+description: Create pull request with checks
+allowed-tools: Bash(git:*), Bash(npm:*), Bash(gh:*)
+---
+
+Create a pull request:
+
+1. Ensure tests pass: !`npm test`
+2. Ensure linting passes: !`npm run lint`
+3. Get current branch: !`git branch --show-current`
+4. Create PR: !`gh pr create --fill`
+5. Display PR URL
+```
+
+## Custom Agents
+
+Create specialized agents in `.claude/agents/`:
+
+### Agent Structure
+
+**File**: `.claude/agents/security-auditor.md`
+
+```markdown
+---
+description: Audit code for security vulnerabilities
+model: claude-sonnet-4.6
+tools: ["Read", "Grep", "Bash"]
+background: false
+---
+
+# Security Audit Agent
+
+Perform a comprehensive security audit of: $ARGUMENTS
+
+## Check for:
+
+### 1. Injection Vulnerabilities
+- SQL injection (string interpolation in queries)
+- Command injection (unsanitized shell commands)
+- XSS (unescaped user input in HTML)
+
+### 2. Authentication Issues  
+- Hardcoded credentials
+- Weak password policies
+- Missing authentication checks
+- Session management flaws
+
+### 3. Data Exposure
+- Sensitive data in logs
+- API keys in code
+- Unnecessary data in API responses
+
+### 4. Dependencies
+- Known vulnerable packages
+- Outdated dependencies
+
+## Output Format
+
+For each issue found:
+- **Severity**: Critical/High/Medium/Low
+- **Location**: file:line
+- **Description**: What the issue is
+- **Impact**: What could happen
+- **Fix**: How to resolve it
+- **Confidence**: 0-100%
+
+Only report issues with confidence ≥75%.
+```
+
+**Usage**:
+```
+> Launch security-auditor for @src/api/
+```
+
+### Agent Frontmatter Options
+
+```yaml
+---
+# Required
+description: Agent description
+
+# Model selection
+model: claude-sonnet-4.6  # or claude-opus-4.6
+
+# Tool restrictions
+tools: ["Read", "Grep", "Glob", "Bash"]
+
+# Execution mode
+background: true  # Run as background task
+isolation: worktree  # Run in isolated git worktree
+
+# Memory
+memory: project  # user, project, or local
+
+# Agent teams
+can-spawn: ["code-explorer", "code-reviewer"]  # Which agents this can launch
+---
+```
+
+### Agent Examples
+
+#### Documentation Generator
+
+```markdown
+---
+description: Generate API documentation from code
+model: claude-sonnet-4.6
+tools: ["Read", "Grep", "Write"]
+---
+
+# Documentation Generator
+
+Generate API documentation for: $ARGUMENTS
+
+1. Find all API route definitions
+2. Extract:
+   - HTTP method and path
+   - Request parameters
+   - Request body schema
+   - Response format
+   - Error codes
+3. Generate Markdown documentation
+4. Write to docs/api.md
+
+Include code examples for each endpoint.
+```
+
+#### Migration Assistant
+
+```markdown
+---
+description: Migrate code from old pattern to new pattern
+model: claude-opus-4.6
+tools: ["Read", "Edit", "Grep"]
+isolation: worktree
+---
+
+# Migration Assistant
+
+Migrate from old pattern to new pattern:
+
+Old pattern: $ARGUMENTS[0]
+New pattern: $ARGUMENTS[1]
+
+1. Find all occurrences of old pattern
+2. Analyze context for each occurrence
+3. Generate migration for each file
+4. Show diff for user approval
+5. Apply changes if approved
+
+Run in isolated worktree for safety.
+```
+
+#### Performance Profiler
+
+```markdown
+---
+description: Profile code for performance bottlenecks
+model: claude-sonnet-4.6
+tools: ["Read", "Grep", "Bash"]
+background: true
+---
+
+# Performance Profiler
+
+Profile application for performance issues: $ARGUMENTS
+
+1. Run profiler: !`npm run profile`
+2. Analyze results for:
+   - Slow functions (>100ms)
+   - Memory leaks
+   - Excessive allocations
+   - N+1 query patterns
+3. Read relevant source files
+4. Suggest optimizations with code examples
+
+Run in background while user continues working.
+```
+
+## Skills
+
+Skills provide reusable knowledge that agents can access:
+
+### Skill Structure
+
+**File**: `.claude/skills/api-design/SKILL.md`
+
+```markdown
+---
+name: API Design Guidelines
+description: Best practices for designing REST APIs
+---
+
+# API Design Guidelines
+
+Follow these principles when designing APIs:
+
+## URL Structure
+- Use nouns for resources: `/users`, `/products`
+- Use plural forms: `/users` not `/user`
+- Nest resources logically: `/users/:id/posts`
+- Keep URLs short and readable
+
+## HTTP Methods
+- GET: Retrieve resources (idempotent)
+- POST: Create resources
+- PUT: Update entire resources (idempotent)
+- PATCH: Partial updates
+- DELETE: Remove resources (idempotent)
+
+## Response Codes
+- 200 OK: Successful GET/PUT/PATCH
+- 201 Created: Successful POST
+- 204 No Content: Successful DELETE
+- 400 Bad Request: Invalid input
+- 401 Unauthorized: Missing auth
+- 403 Forbidden: Insufficient permissions
+- 404 Not Found: Resource doesn't exist
+- 500 Internal Error: Server error
+
+## Response Format
+```json
+{
+  "data": { ... },
+  "meta": {
+    "page": 1,
+    "perPage": 20,
+    "total": 100
+  },
+  "errors": []
+}
+```
+
+## Versioning
+- Use URL versioning: `/v1/users`
+- Maintain backwards compatibility
+- Deprecate before removing
+
+## Security
+- Require authentication
+- Use HTTPS only
+- Validate all inputs
+- Rate limit requests
+- Sanitize error messages
+```
+
+Skills are auto-invoked when relevant to the task.
+
+### Skill Organization
+
+Organize skills with reference materials:
+
+```
+.claude/skills/
+├── api-design/
+│   ├── SKILL.md
+│   ├── examples/
+│   │   ├── good-api.md
+│   │   └── bad-api.md
+│   └── references/
+│       └── rest-principles.md
+└── testing/
+    ├── SKILL.md
+    └── examples/
+        ├── unit-tests.md
+        └── integration-tests.md
+```
+
+## Event Hooks
+
+Hooks run scripts in response to events:
+
+### Hook Configuration
+
+**File**: `.claude/hooks/hooks.json`
+
+```json
+{
+  "hooks": [
+    {
+      "name": "lint-on-edit",
+      "events": ["PostToolUse"],
+      "command": "npm run lint-staged",
+      "match": {
+        "tool": "Edit"
+      }
+    },
+    {
+      "name": "test-before-commit",
+      "events": ["PreToolUse"],
+      "command": "npm test",
+      "match": {
+        "tool": "Bash",
+        "pattern": "git commit:*"
+      },
+      "blocking": true
+    },
+    {
+      "name": "notify-completion",
+      "events": ["Stop"],
+      "command": "./scripts/notify-slack.sh"
+    }
+  ]
+}
+```
+
+### Available Events
+
+| Event | When It Fires |
+|-------|---------------|
+| `SessionStart` | When Claude Code starts |
+| `Stop` | When session ends |
+| `PreToolUse` | Before any tool executes |
+| `PostToolUse` | After tool execution |
+| `SubagentStop` | When agent completes |
+| `TeammateIdle` | When teammate has no tasks |
+| `TaskCompleted` | When background task finishes |
+| `ConfigChange` | When config files change |
+| `WorktreeCreate` | When worktree is created |
+| `WorktreeRemove` | When worktree is removed |
+| `Setup` | Manual setup/maintenance operations |
+
+### Hook Examples
+
+#### Code Formatting
+
+```json
+{
+  "name": "format-on-write",
+  "events": ["PostToolUse"],
+  "command": "prettier --write",
+  "match": {
+    "tool": "Write",
+    "file": "*.{js,ts,jsx,tsx}"
+  }
+}
+```
+
+#### Security Scanner
+
+```json
+{
+  "name": "security-scan",
+  "events": ["PreToolUse"],
+  "command": "./scripts/security-check.sh",
+  "match": {
+    "tool": "Bash",
+    "pattern": "npm install:*"
+  },
+  "blocking": true
+}
+```
+
+#### Backup
+
+```json
+{
+  "name": "backup-on-change",
+  "events": ["PostToolUse"],
+  "command": "./scripts/backup.sh",
+  "match": {
+    "tool": "Edit",
+    "file": "*.{js,ts,py,go}"
+  }
+}
+```
+
+#### Notification
+
+```json
+{
+  "name": "agent-complete-notify",
+  "events": ["SubagentStop"],
+  "command": "./scripts/notify.sh",
+  "env": {
+    "SLACK_WEBHOOK": "https://hooks.slack.com/..."
+  }
+}
+```
+
+### Hook Scripts
+
+Hook scripts receive event data via environment variables:
+
+```bash
+#!/bin/bash
+# scripts/notify-slack.sh
+
+# Available variables:
+# CLAUDE_EVENT - event type
+# CLAUDE_TOOL - tool name (if applicable)
+# CLAUDE_FILE - file path (if applicable)
+# CLAUDE_SESSION_ID - current session ID
+
+curl -X POST $SLACK_WEBHOOK \
+  -H 'Content-Type: application/json' \
+  -d "{
+    \"text\": \"Claude Code: $CLAUDE_EVENT on $CLAUDE_FILE\"
+  }"
+```
+
+### HTTP Hooks
+
+Call HTTP endpoints instead of shell commands:
+
+```json
+{
+  "name": "api-webhook",
+  "events": ["Stop"],
+  "url": "https://api.example.com/webhook",
+  "method": "POST",
+  "headers": {
+    "Authorization": "Bearer ${API_TOKEN}"
+  },
+  "body": {
+    "event": "${CLAUDE_EVENT}",
+    "session": "${CLAUDE_SESSION_ID}"
+  }
+}
+```
+
+## MCP Integration
+
+Connect external tools via Model Context Protocol:
+
+### MCP Configuration
+
+**File**: `.claude/.mcp.json`
+
+```json
+{
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+      }
+    },
+    "database": {
+      "command": "python",
+      "args": ["-m", "mcp_server_postgres"],
+      "env": {
+        "DATABASE_URL": "${DATABASE_URL}"
+      }
+    },
+    "slack": {
+      "transport": "sse",
+      "url": "https://mcp.slack.com/v1/sse",
+      "headers": {
+        "Authorization": "Bearer ${SLACK_TOKEN}"
+      }
+    }
+  }
+}
+```
+
+### Using MCP Tools
+
+Once configured, MCP tools are available naturally:
+
+```
+> List all open GitHub issues
+> Query the database for active users
+> Send a message to the #engineering Slack channel
+```
+
+## Plugin Management
+
+### Installing Plugins
+
+```bash
+# Browse marketplace
+claude plugin browse
+
+# Install plugin
+claude plugin install plugin-name
+
+# Install from git
+claude plugin install https://github.com/user/plugin.git
+
+# Install from local path
+claude plugin install ./path/to/plugin
+```
+
+### Creating Plugins
+
+Plugin structure:
+
+```
+my-plugin/
+├── .claude-plugin/
+│   └── plugin.json
+├── commands/
+│   └── my-command.md
+├── agents/
+│   └── my-agent.md
+├── skills/
+│   └── my-skill/
+│       └── SKILL.md
+├── hooks/
+│   └── hooks.json
+└── README.md
+```
+
+**plugin.json**:
+```json
+{
+  "name": "my-plugin",
+  "version": "1.0.0",
+  "description": "My awesome plugin",
+  "author": "Your Name",
+  "license": "MIT"
+}
+```
+
+### Publishing Plugins
+
+Share via:
+- GitHub repository
+- npm package
+- Custom marketplace
+
+## Best Practices
+
+<Tip>
+  **Start simple**: Begin with basic commands, add complexity as needed
+</Tip>
+
+<Tip>
+  **Use permissions**: Restrict tools with `allowed-tools` for security
+</Tip>
+
+<Tip>
+  **Document thoroughly**: Clear descriptions help users understand what tools do
+</Tip>
+
+<Tip>
+  **Test hooks carefully**: Use `blocking: false` while testing to avoid interruptions
+</Tip>
+
+<Tip>
+  **Organize by domain**: Group related commands, agents, and skills together
+</Tip>
+
+## Troubleshooting
+
+### Command Not Found
+
+**Issue**: Custom command doesn't appear in `/` autocomplete
+
+**Solutions**:
+- Check file is in `.claude/commands/`
+- Verify frontmatter syntax
+- Restart Claude Code
+- Run `claude plugin validate`
+
+### Agent Not Launching
+
+**Issue**: Custom agent can't be launched
+
+**Solutions**:
+- Check file is in `.claude/agents/`
+- Verify frontmatter is valid YAML
+- Check `model` is a valid model name
+- List agents with `claude agents`
+
+### Hook Not Firing
+
+**Issue**: Hook doesn't execute
+
+**Solutions**:
+- Verify event name is correct
+- Check `match` pattern
+- Test command manually
+- Check hook logs in session output
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Git Workflows" icon="git-alt" href="/guides/git-workflows">
+    Automate git operations
+  </Card>
+  
+  <Card title="IDE Integration" icon="window" href="/guides/ide-integration">
+    Use automation in VS Code
+  </Card>
+  
+  <Card title="Project Config" icon="gear" href="/configuration/project-config">
+    Configure project automation
+  </Card>
+  
+  <Card title="Settings" icon="sliders" href="/configuration/settings">
+    Customize plugin behavior
+  </Card>
+</CardGroup>

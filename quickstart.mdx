@@ -1,80 +1,411 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quickstart
+description: Get started with Claude Code in under 5 minutes
 ---
 
-## Get started in three steps
+This guide will get you up and running with Claude Code quickly. We'll cover starting a session, your first commands, and common workflows.
 
-Get your documentation site running locally and make your first customization.
+## Prerequisites
 
-### Step 1: Set up your local environment
+Before starting, ensure you have:
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+- [Installed Claude Code](/installation)
+- Authenticated with your Anthropic account
+- A project directory to work in
 
-### Step 2: Deploy your changes
+## Start Your First Session
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+Navigate to your project directory and run:
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+```bash
+cd your-project
+claude
+```
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+You'll see Claude Code initialize and present an interactive prompt:
 
-### Step 3: Go live
+```
+╭─────────────────────────────────────────────╮
+│  Claude Code - Ready to help you build     │
+╰─────────────────────────────────────────────╯
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+Project: /home/user/your-project
+Model: Claude Sonnet 4.6
 
-## Next steps
+>
+```
 
-Now that you have your docs running, explore these key features:
+## Your First Commands
 
-<CardGroup cols={2}>
+### Ask About Your Code
 
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
+Start by asking Claude about your codebase:
 
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
+```
+> What does this project do?
+```
 
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
+Claude will analyze your files and explain the project's purpose, structure, and key components.
 
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
+### Make a Simple Change
 
-</CardGroup>
+Let's add a feature:
+
+```
+> Add a README.md file with a basic project description
+```
+
+Claude will:
+1. Analyze your project
+2. Draft README content
+3. Show you the proposed file
+4. Ask for approval before creating it
+
+Approve the change by responding:
+
+```
+> Yes, create it
+```
+
+### Reference Specific Files
+
+Use `@` to reference files:
+
+```
+> Explain what @src/index.js does
+```
+
+Claude will read the file and provide a detailed explanation.
+
+<Tip>
+  Type `@` to see autocomplete suggestions for files in your project.
+</Tip>
+
+## Core Workflows
+
+### Code Generation
+
+Ask Claude to write code with natural language:
+
+```
+> Create a user authentication module with login and logout functions
+```
+
+Claude will:
+- Analyze existing code patterns
+- Generate code following your conventions
+- Show you the complete implementation
+- Wait for approval before writing files
+
+### Code Editing
+
+Edit existing files:
+
+```
+> In @src/api.js, add error handling to the fetch function
+```
+
+Claude reads the file, makes targeted edits, and shows you a diff:
+
+```diff
+- const response = await fetch(url);
++ const response = await fetch(url).catch(err => {
++   console.error('Fetch failed:', err);
++   throw err;
++ });
+```
+
+### Git Operations
+
+Use built-in commands for git workflows:
+
+```
+> /commit
+```
+
+Claude will:
+1. Run `git status` and `git diff`
+2. Analyze your changes
+3. Draft a commit message
+4. Create the commit
+
+Other git commands:
+- `/commit-push-pr` - Commit, push, and create a PR
+- Natural language: "Create a new branch called feature/auth"
+
+## Slash Commands
+
+Slash commands provide quick access to common operations:
+
+| Command | Description |
+|---------|-------------|
+| `/help` | Show available commands |
+| `/commit` | Create a git commit |
+| `/model` | Change AI model |
+| `/clear` | Start a new conversation |
+| `/resume` | Resume a previous session |
+| `/config` | Open configuration |
+| `/bug` | Report an issue |
+
+Type `/` to see autocomplete suggestions.
+
+<Tip>
+  Type `/` and start typing to search commands. Press Tab to autocomplete.
+</Tip>
+
+## Permission System
+
+Claude Code asks for permission before executing potentially dangerous operations:
+
+```
+Claude wants to run:
+  bash: rm old-file.js
+
+Allow this operation?
+  [a] Allow once
+  [s] Allow for this session
+  [n] Deny
+  [r] Create rule
+```
+
+Choose your level of trust:
+- **Allow once**: Just this operation
+- **Allow for session**: All similar operations this session
+- **Deny**: Reject this operation
+- **Create rule**: Add permanent permission rule
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+  The permission system protects you from unintended changes. Review carefully before granting permissions.
 </Note>
+
+## Working with Multiple Files
+
+Claude can work across multiple files simultaneously:
+
+```
+> Refactor the authentication logic: move it from @src/app.js 
+  to a new @src/auth.js module and update all imports
+```
+
+Claude will:
+1. Read both files
+2. Create the new module
+3. Update imports
+4. Show you all changes
+5. Execute after approval
+
+## Using Agents
+
+Launch specialized agents for complex tasks:
+
+```
+> Launch a code-explorer agent to trace how authentication works
+```
+
+Agents run in the background and report results:
+
+```
+Agent: code-explorer [Running...]
+Agent: code-explorer [Complete]
+
+Findings:
+- Entry point: src/app.js:23
+- Authentication flow: 
+  1. User credentials received (app.js:45)
+  2. Password hashing (auth/hash.js:12)
+  3. Database query (db/users.js:89)
+  4. JWT token generation (auth/jwt.js:34)
+
+Key files to review:
+- src/app.js:23-67
+- src/auth/hash.js:12-28
+- src/auth/jwt.js:34-56
+```
+
+## Advanced Features
+
+### Background Tasks
+
+Run long operations in the background:
+
+```
+> Run the test suite in the background
+```
+
+Press `Ctrl+B` to view background task status.
+
+### Session Management
+
+Resume previous conversations:
+
+```bash
+claude --resume
+```
+
+Select a session from the list to continue where you left off.
+
+### Context Management
+
+View context usage:
+
+```
+> /context
+```
+
+See token usage, files loaded, and available space.
+
+Compact context when needed:
+
+```
+> /compact
+```
+
+## Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `Enter` | Send message |
+| `Shift+Enter` | New line (multi-line input) |
+| `Ctrl+C` | Cancel current operation |
+| `Ctrl+D` | Exit Claude Code |
+| `Ctrl+G` | Open external editor |
+| `Ctrl+B` | View background tasks |
+| `Ctrl+F` | Kill all background agents |
+| `Up/Down` | Navigate command history |
+| `Tab` | Autocomplete |
+
+## Example Session
+
+Here's a complete example workflow:
+
+```bash
+# Start Claude Code
+claude
+
+# Ask about the project
+> What are the main components of this application?
+
+# Make changes
+> Add input validation to the user registration form in @src/components/Register.js
+
+# Review changes
+> Show me what you changed
+
+# Create a commit
+> /commit
+
+# Launch a code review
+> Launch a code-reviewer agent to check my changes
+
+# Exit
+> /exit
+```
+
+## Common Patterns
+
+### Feature Development
+
+```
+> /feature-dev Add user profile page with avatar upload
+```
+
+This launches a structured 7-phase workflow:
+1. Discovery - Clarify requirements
+2. Exploration - Analyze existing code
+3. Questions - Resolve ambiguities
+4. Architecture - Design approaches
+5. Implementation - Build the feature
+6. Review - Quality check
+7. Summary - Document results
+
+### Code Review
+
+```
+> Review the changes in @src/api.js for bugs and improvements
+```
+
+Claude analyzes:
+- Potential bugs
+- Performance issues
+- Code quality
+- Best practices
+- Security concerns
+
+### Debugging
+
+```
+> I'm getting "TypeError: Cannot read property 'name' of undefined" 
+  in @src/user.js. Help me fix it.
+```
+
+Claude will:
+- Read the file
+- Identify the issue
+- Suggest fixes
+- Explain the root cause
+
+## Tips for Success
+
+<Tip>
+  **Be specific**: Include file references, error messages, and context for better results.
+</Tip>
+
+<Tip>
+  **Use @-mentions**: Reference specific files and functions to give Claude precise context.
+</Tip>
+
+<Tip>
+  **Review before approving**: Always review proposed changes before allowing execution.
+</Tip>
+
+<Tip>
+  **Iterate**: Refine requests based on results. Claude remembers conversation context.
+</Tip>
+
+## Troubleshooting
+
+### Claude doesn't find my files
+
+**Issue**: File references don't autocomplete or aren't found
+
+**Solution**: Ensure you're in the project root or use full paths
+
+### Changes aren't what I expected
+
+**Issue**: Generated code doesn't match your request
+
+**Solution**: 
+- Provide more context with @-mentions
+- Reference similar existing code
+- Iterate with follow-up refinements
+
+### Permission prompts are annoying
+
+**Issue**: Too many permission requests
+
+**Solution**: Create permanent rules:
+1. Choose "Create rule" option
+2. Define scope (session/project/user)
+3. Future similar operations auto-approve
+
+## Next Steps
+
+Now that you're familiar with the basics, explore:
+
+<CardGroup cols={2}>
+  <Card title="Core Concepts" icon="lightbulb" href="/concepts/overview">
+    Learn how Claude Code works under the hood
+  </Card>
+  
+  <Card title="Git Workflows" icon="git-alt" href="/guides/git-workflows">
+    Master git operations with Claude
+  </Card>
+  
+  <Card title="Task Automation" icon="robot" href="/guides/task-automation">
+    Create custom commands and agents
+  </Card>
+  
+  <Card title="Configuration" icon="gear" href="/configuration/settings">
+    Customize settings and permissions
+  </Card>
+</CardGroup>

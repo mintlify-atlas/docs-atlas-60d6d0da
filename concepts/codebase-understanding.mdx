@@ -1,0 +1,601 @@
+---
+title: Codebase Understanding
+description: How Claude Code analyzes and comprehends your code structure, patterns, and relationships
+---
+
+Claude Code goes beyond simple file reading to deeply understand your codebase's structure, patterns, conventions, and relationships. This understanding powers intelligent code generation, refactoring, and analysis.
+
+## How It Works
+
+Claude Code builds understanding through multiple layers:
+
+<Steps>
+  <Step title="Project Discovery">
+    Identifies project type, language, framework, and build tools by analyzing:
+    - package.json, requirements.txt, Cargo.toml, etc.
+    - Directory structure conventions
+    - Configuration files
+    - Git repository metadata
+  </Step>
+  
+  <Step title="Pattern Recognition">
+    Learns your code patterns:
+    - Naming conventions
+    - File organization
+    - Architecture patterns (MVC, microservices, etc.)
+    - Common idioms and utilities
+  </Step>
+  
+  <Step title="Dependency Mapping">
+    Understands relationships:
+    - Import/export chains
+    - Function call graphs
+    - Data flow
+    - Module boundaries
+  </Step>
+  
+  <Step title="Context Integration">
+    Combines with:
+    - Conversation history
+    - Git history and changes
+    - Documentation (README, CLAUDE.md)
+    - Test files and examples
+  </Step>
+</Steps>
+
+## Analysis Techniques
+
+### Static Analysis
+
+Claude Code uses tree-sitter parsers for:
+
+**Syntax Understanding**:
+- Function and class definitions
+- Variable declarations
+- Import statements
+- Type annotations
+
+**Code Structure**:
+- Module boundaries
+- Export surfaces
+- Public vs private APIs
+- Nesting and scope
+
+**Language Support**: JavaScript, TypeScript, Python, Go, Rust, Java, C++, and more
+
+### Dynamic Tracing
+
+Agents trace execution paths:
+
+```
+> Launch code-explorer to trace the authentication flow
+```
+
+Tracing reveals:
+1. **Entry points**: Where code starts (routes, CLI commands, event handlers)
+2. **Call chains**: Function A calls B calls C
+3. **Data flow**: How data transforms through the system
+4. **Side effects**: Database calls, API requests, file I/O
+
+**Example trace**:
+```
+Authentication Flow:
+1. POST /auth/login (src/routes/auth.js:23)
+   → Extract credentials from request body
+   
+2. validateCredentials (src/auth/validate.js:45)
+   → Check email format
+   → Verify password length
+   
+3. hashPassword (src/auth/hash.js:67)
+   → bcrypt.compare with stored hash
+   
+4. findUserByEmail (src/db/users.js:89)
+   → SQL: SELECT * FROM users WHERE email = ?
+   
+5. generateToken (src/auth/jwt.js:34)
+   → Create JWT with user id and role
+   
+6. Return { token, user } (src/routes/auth.js:56)
+```
+
+### Pattern Extraction
+
+Claude identifies and learns from patterns:
+
+**Error Handling Patterns**:
+```javascript
+// Pattern found in existing code
+try {
+  const result = await operation();
+  return result;
+} catch (error) {
+  logger.error('Operation failed:', error);
+  throw new AppError('Operation failed', 500);
+}
+```
+
+When you ask to "add error handling," Claude uses this pattern.
+
+**API Route Patterns**:
+```javascript
+// Pattern: All routes follow this structure
+router.post('/resource', 
+  authenticate,
+  validate(schema),
+  async (req, res) => {
+    // handler logic
+  }
+);
+```
+
+New routes automatically follow this pattern.
+
+### Convention Detection
+
+Claude learns project-specific conventions:
+
+**Naming Conventions**:
+- `UserService` → Services use PascalCase with "Service" suffix
+- `getUserById` → Functions use camelCase with verb prefixes
+- `user.model.js` → Models use `.model.js` suffix
+
+**File Organization**:
+```
+src/
+  features/
+    users/
+      users.controller.js
+      users.service.js
+      users.model.js
+      users.test.js
+```
+Pattern: Feature folders with co-located files
+
+**Import Styles**:
+```javascript
+// Pattern: Absolute imports from src/
+import { UserService } from '@/services/UserService';
+```
+
+## Context Sources
+
+### CLAUDE.md Files
+
+Project-specific guidance in `.claude/CLAUDE.md`:
+
+```markdown
+# Project Conventions
+
+## Code Style
+- Use async/await, not promises.then()
+- All exported functions must have JSDoc comments
+- Prefer named exports over default exports
+
+## Architecture
+- Services handle business logic
+- Controllers handle HTTP
+- Models define data schemas
+
+## Testing
+- Unit tests in .test.js files
+- Integration tests in __tests__/ directories
+- Minimum 80% coverage required
+```
+
+Claude automatically follows these conventions.
+
+### Git History
+
+Claude can analyze git history:
+
+**Recent Changes**:
+```
+> What changed in the last week?
+```
+
+**Commit Patterns**:
+```
+> Write a commit message following our style
+```
+
+Claude learns from:
+- Commit message format
+- Change patterns
+- Author patterns
+- Branch naming
+
+### Documentation
+
+Claude reads and learns from:
+
+**README files**: Project overview, setup, usage
+
+**Code comments**: Implementation notes, TODOs, warnings
+
+**JSDoc/docstrings**: API documentation, parameter types
+
+**Test files**: Expected behavior, edge cases, examples
+
+### Configuration Files
+
+Understand build and runtime config:
+
+**package.json**:
+```json
+{
+  "scripts": {
+    "test": "jest",
+    "build": "tsc",
+    "dev": "nodemon src/index.ts"
+  }
+}
+```
+
+Claude knows:
+- Test command: `npm test`
+- Build process: TypeScript compilation
+- Dev server: nodemon with hot reload
+
+**tsconfig.json, .eslintrc, etc.**:
+- Type checking rules
+- Linting preferences
+- Code formatting
+
+## Search and Navigation
+
+### File Search (Glob)
+
+Find files by pattern:
+
+```
+> Find all test files
+```
+
+Claude uses: `**/*.test.js`, `**/*.spec.js`, `**/__tests__/**`
+
+**Smart patterns**:
+- "TypeScript files" → `**/*.ts`
+- "React components" → `**/*.jsx`, `**/*.tsx`
+- "API routes" → Searches common route directories
+
+### Content Search (Grep)
+
+Find code by pattern:
+
+```
+> Where do we use the database connection?
+```
+
+Searches for:
+- `db.connect`
+- `createConnection`
+- `new Database`
+- Related patterns
+
+**Regex support**:
+```
+> Find all async functions: /async\s+function/
+```
+
+### Symbol Search
+
+Locate definitions and usages:
+
+```
+> Where is UserService defined and used?
+```
+
+Finds:
+- Class definition
+- All imports
+- All instantiations
+- All method calls
+
+### Cross-file Analysis
+
+Track relationships across files:
+
+```
+> Show me all files that import from @/utils/auth
+```
+
+Reveals:
+- Direct importers
+- Transitive dependencies
+- Usage patterns
+
+## Language-Specific Understanding
+
+### JavaScript/TypeScript
+
+**Module Systems**: CommonJS, ES modules
+
+**Type Information**: TypeScript types, JSDoc annotations
+
+**Frameworks**: React, Vue, Angular, Express, Next.js
+
+**Build Tools**: webpack, vite, esbuild
+
+### Python
+
+**Import Styles**: relative, absolute, from imports
+
+**Type Hints**: Function annotations, variable types
+
+**Frameworks**: Django, Flask, FastAPI
+
+**Package Management**: pip, poetry, conda
+
+### Go
+
+**Package Structure**: module, package organization
+
+**Interfaces**: interface definitions and implementations
+
+**Error Handling**: error return patterns
+
+### Rust
+
+**Ownership**: borrow checker implications
+
+**Traits**: trait bounds and implementations
+
+**Cargo**: dependency management, features
+
+## Intelligent Code Generation
+
+Understanding enables context-aware generation:
+
+### Following Patterns
+
+Generated code matches existing style:
+
+**Request**: "Add a product service"
+
+**Analysis**:
+- Existing services use class syntax
+- Located in `src/services/`
+- Constructor injects dependencies
+- Methods are async
+- Error handling uses try-catch
+
+**Generated**:
+```javascript
+// src/services/ProductService.js
+import { db } from '@/db';
+import { logger } from '@/utils/logger';
+import { AppError } from '@/errors';
+
+export class ProductService {
+  constructor(database = db) {
+    this.db = database;
+  }
+
+  async getById(id) {
+    try {
+      const product = await this.db.query(
+        'SELECT * FROM products WHERE id = ?',
+        [id]
+      );
+      if (!product) {
+        throw new AppError('Product not found', 404);
+      }
+      return product;
+    } catch (error) {
+      logger.error('Failed to get product:', error);
+      throw error;
+    }
+  }
+}
+```
+
+Matches existing:
+- File location and naming
+- Class structure
+- Dependency injection
+- Error handling pattern
+- Import style
+
+### Smart Refactoring
+
+Understanding enables safe refactoring:
+
+**Request**: "Extract the validation logic into a separate module"
+
+**Analysis**:
+1. Identifies all validation code
+2. Finds all call sites
+3. Determines appropriate module location
+4. Checks for circular dependencies
+5. Updates all imports
+
+**Execution**:
+1. Creates new `src/utils/validation.js`
+2. Moves validation functions
+3. Adds proper exports
+4. Updates all import statements
+5. Verifies no references broken
+
+### Contextual Suggestions
+
+Suggestions based on codebase:
+
+```
+> Add authentication to the products API
+```
+
+Claude notices:
+- Auth middleware exists: `src/middleware/auth.js`
+- Other routes use it: `router.get('/users', authenticate, handler)`
+- Suggests: "Apply the existing `authenticate` middleware"
+
+## Advanced Features
+
+### LSP Integration
+
+When available, Claude uses Language Server Protocol:
+
+**Go to Definition**: Find where symbols are defined
+
+**Find References**: Locate all usages
+
+**Type Information**: Inferred and annotated types
+
+**Diagnostics**: Compiler errors and warnings
+
+**Configuration**:
+```json
+{
+  "lspServers": {
+    "typescript": {
+      "command": "typescript-language-server",
+      "args": ["--stdio"]
+    }
+  }
+}
+```
+
+### Memory Systems
+
+Claude automatically saves useful context:
+
+**Auto-memory**: Key facts saved during conversations
+```
+> /memory
+```
+
+View saved memories:
+- Project patterns
+- Common tasks
+- Important decisions
+- Frequent references
+
+**Scopes**:
+- **User**: Across all projects
+- **Project**: This repository only
+- **Local**: This session only
+
+### Workspace Understanding
+
+Multi-directory projects:
+
+```bash
+claude --add-dir ../shared-libs
+```
+
+Claude understands:
+- Monorepo structures
+- Shared dependencies
+- Cross-project patterns
+
+## Performance Optimizations
+
+### Incremental Loading
+
+Claude loads context on-demand:
+
+**First mention**: File loaded into context
+
+**Subsequent mentions**: Already in context
+
+**Large files**: Collapsed summaries with expand option
+
+### Caching
+
+Prompt caching reduces latency:
+
+**Cached**:
+- System prompts
+- Tool definitions  
+- Frequently accessed files
+- Project structure
+
+**Cache hits**: 80%+ in active sessions
+
+### Smart Truncation
+
+Large files intelligently truncated:
+
+**PDFs**: Load specific pages
+```
+> Read pages 10-15 of @docs/api.pdf
+```
+
+**Code files**: Show relevant sections
+```
+> Show the login function in @src/auth.js
+```
+
+## Best Practices
+
+<Tip>
+  **Use CLAUDE.md**: Document conventions, architecture, and patterns
+</Tip>
+
+<Tip>
+  **Reference files explicitly**: Use @-mentions for precise context
+</Tip>
+
+<Tip>
+  **Let agents explore**: Launch code-explorer for deep understanding
+</Tip>
+
+<Tip>
+  **Provide examples**: Point to similar code when requesting new features
+</Tip>
+
+<Tip>
+  **Keep context focused**: Reference specific files instead of loading everything
+</Tip>
+
+## Troubleshooting
+
+### Claude Doesn't Find Files
+
+**Issue**: Files not located or referenced
+
+**Solutions**:
+- Use explicit paths: `@src/utils/helpers.js`
+- Check working directory
+- Verify files not gitignored
+- Use Glob to search: "Find files matching pattern"
+
+### Generated Code Doesn't Match Style
+
+**Issue**: Code doesn't follow project conventions
+
+**Solutions**:
+- Create `.claude/CLAUDE.md` with conventions
+- Provide examples: "Like @src/existing.js"
+- Give specific instructions: "Use async/await"
+
+### Understanding Seems Shallow
+
+**Issue**: Claude misses important context
+
+**Solutions**:
+- Launch code-explorer agents for deep analysis
+- Reference key files explicitly
+- Point to documentation or examples
+- Add context to CLAUDE.md
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Agents" icon="users" href="/concepts/agents">
+    Use agents for deep code analysis
+  </Card>
+  
+  <Card title="Task Automation" icon="robot" href="/guides/task-automation">
+    Create project-specific commands
+  </Card>
+  
+  <Card title="Configuration" icon="gear" href="/configuration/project-config">
+    Configure CLAUDE.md and project settings
+  </Card>
+  
+  <Card title="Code Review" icon="search" href="/guides/code-review">
+    Leverage understanding for code review
+  </Card>
+</CardGroup>

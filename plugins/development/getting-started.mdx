@@ -1,0 +1,368 @@
+---
+title: Getting Started with Plugin Development
+description: Learn how to create your first Claude Code plugin
+---
+
+Claude Code plugins extend functionality through custom commands, agents, skills, and hooks. This guide will walk you through creating your first plugin.
+
+## Prerequisites
+
+Before you begin:
+- Claude Code installed and working
+- Basic understanding of markdown and YAML
+- Text editor of your choice
+- (Optional) Git for version control
+
+## Quick Start
+
+The fastest way to create a plugin is using the plugin-dev toolkit:
+
+```bash
+/plugin install plugin-dev
+/plugin-dev:create-plugin My first plugin
+```
+
+This launches a guided workflow that helps you through the entire process.
+
+## Manual Plugin Creation
+
+To understand plugin structure, let's create a simple plugin manually.
+
+### Step 1: Create Plugin Directory
+
+Create a directory for your plugin:
+
+```bash
+mkdir my-first-plugin
+cd my-first-plugin
+```
+
+### Step 2: Create Plugin Manifest
+
+Every plugin needs a manifest at `.claude-plugin/plugin.json`:
+
+```bash
+mkdir .claude-plugin
+```
+
+Create `.claude-plugin/plugin.json`:
+
+```json
+{
+  "name": "my-first-plugin",
+  "version": "1.0.0",
+  "description": "My first Claude Code plugin",
+  "author": {
+    "name": "Your Name",
+    "email": "you@example.com"
+  }
+}
+```
+
+<Note>
+  The `name` field must be unique and use kebab-case (lowercase with hyphens).
+</Note>
+
+### Step 3: Add a Command
+
+Create a simple slash command in `commands/hello.md`:
+
+```bash
+mkdir commands
+```
+
+Create `commands/hello.md`:
+
+```markdown
+---
+description: Say hello to the user
+argument-hint: [name]
+---
+
+Greet the user warmly.
+
+If $ARGUMENTS is provided, use that as the name.
+Otherwise, just say "Hello!"
+
+Be friendly and welcoming.
+```
+
+### Step 4: Test Your Plugin
+
+Load your plugin locally:
+
+```bash
+cc --plugin-dir /path/to/my-first-plugin
+```
+
+Then try your command:
+
+```bash
+/hello World
+```
+
+Claude should greet you!
+
+## Plugin Structure
+
+Your plugin now has this structure:
+
+```
+my-first-plugin/
+├── .claude-plugin/
+│   └── plugin.json          # Plugin metadata (required)
+└── commands/
+    └── hello.md              # Your slash command
+```
+
+You can add more components:
+
+```
+my-first-plugin/
+├── .claude-plugin/
+│   └── plugin.json          # Required
+├── commands/                # Slash commands (optional)
+│   └── hello.md
+├── agents/                  # Specialized agents (optional)
+│   └── helper.md
+├── skills/                  # Auto-activating skills (optional)
+│   └── my-skill/
+│       └── SKILL.md
+├── hooks/                   # Event handlers (optional)
+│   ├── hooks.json
+│   └── scripts/
+├── .mcp.json                # MCP servers (optional)
+└── README.md                # Documentation (recommended)
+```
+
+## Next Steps
+
+<Steps>
+  <Step title="Add an Agent">
+    Create a specialized agent in `agents/`
+    
+    See [Agent Development](/plugins/development/agents)
+  </Step>
+  
+  <Step title="Add a Skill">
+    Create auto-activating expertise in `skills/`
+    
+    See [Skill Development](/plugins/development/skills)
+  </Step>
+  
+  <Step title="Add Hooks">
+    Create event handlers in `hooks/`
+    
+    See [Hook Development](/plugins/development/hooks)
+  </Step>
+  
+  <Step title="Write Documentation">
+    Create a comprehensive README.md
+    
+    See [Plugin Structure](/plugins/development/structure)
+  </Step>
+</Steps>
+
+## Development Workflow
+
+### 1. Develop Locally
+
+Use `--plugin-dir` to test changes:
+
+```bash
+cc --plugin-dir /path/to/my-plugin
+```
+
+Changes take effect immediately in new sessions.
+
+### 2. Add to Project
+
+Once working, add to your project's `.claude/settings.json`:
+
+```json
+{
+  "plugins": [
+    "file:///absolute/path/to/my-plugin"
+  ]
+}
+```
+
+### 3. Publish
+
+When ready to share:
+
+1. Push to GitHub
+2. Create a release with version tag
+3. Submit to plugin marketplace
+
+See [Publishing Guide](/plugins/marketplace) for details.
+
+## Common Patterns
+
+### Simple Command Plugin
+
+Just commands, no agents or hooks:
+
+```
+command-plugin/
+├── .claude-plugin/
+│   └── plugin.json
+└── commands/
+    ├── command1.md
+    └── command2.md
+```
+
+### Agent-Focused Plugin
+
+Primarily provides specialized agents:
+
+```
+agent-plugin/
+├── .claude-plugin/
+│   └── plugin.json
+└── agents/
+    ├── analyzer.md
+    ├── reviewer.md
+    └── generator.md
+```
+
+### Skill Plugin
+
+Provides auto-activating expertise:
+
+```
+skill-plugin/
+├── .claude-plugin/
+│   └── plugin.json
+└── skills/
+    └── my-skill/
+        ├── SKILL.md
+        ├── examples/
+        └── references/
+```
+
+### Full-Featured Plugin
+
+Uses all component types:
+
+```
+full-plugin/
+├── .claude-plugin/
+│   └── plugin.json
+├── commands/
+├── agents/
+├── skills/
+├── hooks/
+├── .mcp.json
+└── README.md
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Start Simple" icon="seedling">
+    Begin with just a command or agent, add complexity as needed
+  </Card>
+  <Card title="Use ${CLAUDE_PLUGIN_ROOT}" icon="folder">
+    Always use this variable for portable path references
+  </Card>
+  <Card title="Test Thoroughly" icon="vial">
+    Test on different operating systems and projects
+  </Card>
+  <Card title="Document Well" icon="book">
+    Clear README with examples and usage instructions
+  </Card>
+</CardGroup>
+
+## Debugging Tips
+
+### Enable Debug Mode
+
+```bash
+claude --debug
+```
+
+This shows:
+- Plugin loading process
+- Component discovery
+- Hook execution
+- Agent triggering
+
+### Check Plugin Loaded
+
+Ask Claude:
+
+```
+"What plugins are currently loaded?"
+```
+
+### Verify Component Discovery
+
+```
+"What commands are available from my-first-plugin?"
+"What agents are available from my-first-plugin?"
+```
+
+### Common Issues
+
+**Plugin not loading:**
+- Check `plugin.json` syntax
+- Verify directory structure
+- Ensure `.claude-plugin` directory exists
+
+**Command not found:**
+- Check file is in `commands/` directory
+- Verify `.md` extension
+- Check YAML frontmatter syntax
+
+**Agent not triggering:**
+- Review `description` field for trigger phrases
+- Add `<example>` blocks to description
+- Make description more specific
+
+## Resources
+
+<CardGroup cols={2}>
+  <Card title="Plugin Structure" icon="folder-tree" href="/plugins/development/structure">
+    Detailed guide to plugin organization
+  </Card>
+  <Card title="Commands" icon="terminal" href="/plugins/development/commands">
+    Creating slash commands
+  </Card>
+  <Card title="Agents" icon="robot" href="/plugins/development/agents">
+    Building specialized agents
+  </Card>
+  <Card title="Skills" icon="lightbulb" href="/plugins/development/skills">
+    Auto-activating expertise
+  </Card>
+  <Card title="Hooks" icon="webhook" href="/plugins/development/hooks">
+    Event-driven automation
+  </Card>
+  <Card title="MCP Integration" icon="plug" href="/plugins/development/mcp-integration">
+    Connecting external tools
+  </Card>
+</CardGroup>
+
+## Examples
+
+Study these bundled plugins for examples:
+
+- **commit-commands**: Simple command-based plugin
+- **hookify**: Hooks and configuration files
+- **feature-dev**: Commands, agents, and workflow
+- **plugin-dev**: Skills, agents, and comprehensive toolkit
+
+## Get Help
+
+For more guidance:
+
+```bash
+/plugin install plugin-dev
+/plugin-dev:create-plugin
+```
+
+The plugin-dev toolkit provides:
+- 7 expert skills covering all aspects
+- Guided creation workflow
+- Validation and testing utilities
+- Working examples and templates

@@ -1,0 +1,293 @@
+---
+title: Plugin Installation
+description: Install and configure Claude Code plugins in your projects
+---
+
+Claude Code plugins can be installed globally, per-project, or loaded from local directories during development.
+
+## Installation Methods
+
+### Using the Plugin Command
+
+The simplest way to install plugins is using the `/plugin` command:
+
+```bash
+/plugin install plugin-name
+```
+
+For plugins from specific marketplaces:
+
+```bash
+/plugin install plugin-name@marketplace-name
+```
+
+<Note>
+  Plugins installed this way are available across all your Claude Code sessions.
+</Note>
+
+### Configuration File
+
+Configure plugins in your project's `.claude/settings.json`:
+
+```json
+{
+  "plugins": [
+    "code-review",
+    "commit-commands",
+    "feature-dev"
+  ]
+}
+```
+
+### Local Development
+
+Load plugins from local directories during development:
+
+```bash
+cc --plugin-dir /path/to/your/plugin
+```
+
+This is useful when developing or testing plugins before publishing.
+
+## Bundled Plugins
+
+Claude Code includes several official plugins that are available by default:
+
+- agent-sdk-dev
+- code-review
+- commit-commands
+- feature-dev
+- frontend-design
+- hookify
+- plugin-dev
+- pr-review-toolkit
+
+These plugins are automatically available when you run Claude Code.
+
+## Plugin Discovery
+
+### Browse Available Plugins
+
+List all available plugins:
+
+```bash
+/plugin list
+```
+
+Search for specific plugins:
+
+```bash
+/plugin search keyword
+```
+
+### Plugin Information
+
+View details about a plugin:
+
+```bash
+/plugin info plugin-name
+```
+
+This shows:
+- Description and version
+- Author information
+- Commands provided
+- Agents and skills included
+- Requirements and dependencies
+
+## Managing Plugins
+
+### Enable/Disable Plugins
+
+Disable a plugin without uninstalling:
+
+```bash
+/plugin disable plugin-name
+```
+
+Re-enable it later:
+
+```bash
+/plugin enable plugin-name
+```
+
+### Uninstall Plugins
+
+Remove a plugin:
+
+```bash
+/plugin uninstall plugin-name
+```
+
+### Update Plugins
+
+Update to the latest version:
+
+```bash
+/plugin update plugin-name
+```
+
+Update all plugins:
+
+```bash
+/plugin update --all
+```
+
+## Plugin Configuration
+
+### Plugin Settings Files
+
+Many plugins use `.claude/plugin-name.local.md` files for configuration:
+
+```markdown
+---
+enabled: true
+option1: value1
+option2: value2
+---
+
+Optional markdown content for documentation or templates.
+```
+
+<Tip>
+  Settings files use `.local.md` extension and are typically ignored by git, making them perfect for per-developer or per-machine configuration.
+</Tip>
+
+### Environment Variables
+
+Plugins may require environment variables:
+
+```bash
+# In your .env file
+ANTHROPIC_API_KEY=your_api_key
+PLUGIN_SPECIFIC_CONFIG=value
+```
+
+Refer to each plugin's documentation for specific configuration requirements.
+
+## Project-Specific Plugins
+
+Install plugins only for a specific project by configuring `.claude/settings.json` in that project:
+
+<Steps>
+  <Step title="Create Settings Directory">
+    ```bash
+    mkdir -p .claude
+    ```
+  </Step>
+  
+  <Step title="Add Plugin Configuration">
+    Create `.claude/settings.json`:
+    ```json
+    {
+      "plugins": [
+        "project-specific-plugin"
+      ]
+    }
+    ```
+  </Step>
+  
+  <Step title="Run Claude Code">
+    Plugins will load automatically when you start Claude Code in this directory:
+    ```bash
+    claude
+    ```
+  </Step>
+</Steps>
+
+## Verification
+
+### Check Installed Plugins
+
+View all installed plugins:
+
+```bash
+/plugin list --installed
+```
+
+### Test Plugin Commands
+
+After installation, test that commands are available:
+
+```bash
+/command-name --help
+```
+
+### Verify Agents and Skills
+
+Agents and skills load automatically. Ask Claude:
+
+```
+"What agents are available from my installed plugins?"
+```
+
+## Troubleshooting
+
+### Plugin Not Loading
+
+**Issue**: Plugin installed but commands/agents not available
+
+**Solutions**:
+1. Verify plugin is enabled: `/plugin list --installed`
+2. Check configuration syntax in `.claude/settings.json`
+3. Restart Claude Code session
+4. Check plugin compatibility with your Claude Code version
+
+### Configuration Errors
+
+**Issue**: Plugin fails to load with configuration errors
+
+**Solutions**:
+1. Validate JSON syntax in settings files
+2. Check YAML frontmatter in `.local.md` files
+3. Verify environment variables are set
+4. Review plugin README for required configuration
+
+### Path Resolution Issues
+
+**Issue**: Plugin can't find resources or scripts
+
+**Solutions**:
+1. Check that plugin uses `${CLAUDE_PLUGIN_ROOT}` for paths
+2. Verify all referenced files exist in plugin directory
+3. Check file permissions on scripts and executables
+
+### Conflicts Between Plugins
+
+**Issue**: Two plugins provide commands with the same name
+
+**Solutions**:
+1. Disable one of the conflicting plugins
+2. Use namespaced commands if available (e.g., `/plugin:command`)
+3. Check plugin documentation for configuration options
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Version Control" icon="git">
+    Add `.claude/*.local.md` to `.gitignore` for user-specific settings
+  </Card>
+  <Card title="Team Standards" icon="users">
+    Document required plugins in your project README
+  </Card>
+  <Card title="Regular Updates" icon="sync">
+    Keep plugins updated for bug fixes and new features
+  </Card>
+  <Card title="Minimal Install" icon="minimize">
+    Only install plugins you actively use to reduce complexity
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Browse Plugins" icon="grid" href="/plugins/bundled/agent-sdk-dev">
+    Explore bundled plugins and their features
+  </Card>
+  <Card title="Marketplace" icon="store" href="/plugins/marketplace">
+    Discover community plugins
+  </Card>
+  <Card title="Create a Plugin" icon="code" href="/plugins/development/getting-started">
+    Build your own custom plugins
+  </Card>
+</CardGroup>

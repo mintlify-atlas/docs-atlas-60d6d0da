@@ -1,0 +1,607 @@
+---
+title: settings.json
+description: Complete reference for Claude Code settings.json configuration file
+---
+
+The `settings.json` file controls Claude Code's behavior, permissions, and features. Settings can be configured at multiple levels with a clear hierarchy.
+
+## Settings Hierarchy
+
+Settings are loaded from multiple locations in priority order:
+
+```bash
+# 1. Managed settings (highest priority - enterprise)
+managed-settings.json
+
+# 2. User settings
+~/.claude/settings.json
+
+# 3. Project settings
+project/.claude/settings.json
+
+# 4. Local settings (lowest priority - not committed)
+project/.claude/settings.local.json
+```
+
+<Note>
+Managed settings cannot be overridden by users when enterprise policies are enforced.
+</Note>
+
+## Permission Settings
+
+### Basic Permissions
+
+Control which tools Claude can use:
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Write", 
+      "Edit",
+      "Bash(git:*)",
+      "Bash(npm:*)"
+    ],
+    "ask": [
+      "Bash"
+    ],
+    "deny": [
+      "WebSearch",
+      "WebFetch"
+    ]
+  }
+}
+```
+
+<ParamField path="permissions.allow" type="string[]">
+  Tools that are auto-approved without prompting.
+</ParamField>
+
+<ParamField path="permissions.ask" type="string[]">
+  Tools that require user approval before execution.
+</ParamField>
+
+<ParamField path="permissions.deny" type="string[]">
+  Tools that are completely blocked.
+</ParamField>
+
+### Permission Patterns
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Read",           // Allow all file reads
+      "Bash(git:*)",    // Allow any git command
+      "Bash(npm test:*)", // Allow npm test only
+      "Bash(./scripts/deploy.sh:*)", // Allow specific script
+      "MCPTool(github:*)" // Allow specific MCP tools
+    ]
+  }
+}
+```
+
+### Disable Bypass Mode
+
+```json
+{
+  "permissions": {
+    "disableBypassPermissionsMode": "disable"
+  }
+}
+```
+
+<ParamField path="permissions.disableBypassPermissionsMode" type="'disable' | 'enable'">
+  When set to `"disable"`, prevents users from using `--dangerously-skip-permissions` flag.
+</ParamField>
+
+### Managed Permissions
+
+```json
+{
+  "allowManagedPermissionRulesOnly": true
+}
+```
+
+<ParamField path="allowManagedPermissionRulesOnly" type="boolean" default={false}>
+  When `true`, only managed settings can define permission rules. User and project-level `allow`/`ask`/`deny` are ignored.
+</ParamField>
+
+## Sandbox Settings
+
+Configure bash command sandboxing for enhanced security.
+
+### Enable Sandbox
+
+```json
+{
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true
+  }
+}
+```
+
+<ParamField path="sandbox.enabled" type="boolean" default={false}>
+  Enable bash command sandboxing.
+</ParamField>
+
+<ParamField path="sandbox.autoAllowBashIfSandboxed" type="boolean" default={false}>
+  Auto-approve bash commands when running in sandbox mode.
+</ParamField>
+
+### Network Restrictions
+
+```json
+{
+  "sandbox": {
+    "network": {
+      "allowLocalBinding": false,
+      "allowAllUnixSockets": false,
+      "allowUnixSockets": ["/var/run/docker.sock"],
+      "allowedDomains": ["api.github.com", "*.anthropic.com"],
+      "httpProxyPort": 8080,
+      "socksProxyPort": null
+    }
+  }
+}
+```
+
+<ParamField path="sandbox.network.allowLocalBinding" type="boolean" default={false}>
+  Allow binding to local network interfaces.
+</ParamField>
+
+<ParamField path="sandbox.network.allowAllUnixSockets" type="boolean" default={false}>
+  Allow access to all Unix sockets.
+</ParamField>
+
+<ParamField path="sandbox.network.allowUnixSockets" type="string[]">
+  Specific Unix sockets that are allowed (e.g., Docker socket).
+</ParamField>
+
+<ParamField path="sandbox.network.allowedDomains" type="string[]">
+  Domain whitelist. Supports wildcards (`*.example.com`).
+</ParamField>
+
+<ParamField path="sandbox.network.httpProxyPort" type="number | null">
+  HTTP proxy port for sandbox network access.
+</ParamField>
+
+<ParamField path="sandbox.network.socksProxyPort" type="number | null">
+  SOCKS proxy port for sandbox network access.
+</ParamField>
+
+### Excluded Commands
+
+```json
+{
+  "sandbox": {
+    "excludedCommands": ["docker", "kubectl"],
+    "allowUnsandboxedCommands": false
+  }
+}
+```
+
+<ParamField path="sandbox.excludedCommands" type="string[]">
+  Commands that bypass the sandbox (run normally).
+</ParamField>
+
+<ParamField path="sandbox.allowUnsandboxedCommands" type="boolean" default={true}>
+  When `false`, blocks commands in `excludedCommands` instead of running them unsandboxed.
+</ParamField>
+
+<Warning>
+Excluded commands run with full system access. Only exclude trusted commands.
+</Warning>
+
+### Full Sandbox Example
+
+```json settings-bash-sandbox.json
+{
+  "allowManagedPermissionRulesOnly": true,
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": false,
+    "allowUnsandboxedCommands": false,
+    "excludedCommands": [],
+    "network": {
+      "allowUnixSockets": [],
+      "allowAllUnixSockets": false,
+      "allowLocalBinding": false,
+      "allowedDomains": [],
+      "httpProxyPort": null,
+      "socksProxyPort": null
+    },
+    "enableWeakerNestedSandbox": false
+  }
+}
+```
+
+## Plugin Settings
+
+### Plugin Marketplaces
+
+```json
+{
+  "strictKnownMarketplaces": [],
+  "extraKnownMarketplaces": [
+    {
+      "name": "Company Internal",
+      "url": "https://plugins.company.com/marketplace.json"
+    }
+  ]
+}
+```
+
+<ParamField path="strictKnownMarketplaces" type="array">
+  When set to empty array `[]`, blocks all public plugin marketplaces. Users can only install from `extraKnownMarketplaces`.
+</ParamField>
+
+<ParamField path="extraKnownMarketplaces" type="array">
+  Additional plugin marketplaces to make available.
+  
+  Each entry has:
+  - `name` - Display name
+  - `url` - Marketplace JSON URL
+</ParamField>
+
+### Enabled Plugins
+
+```json
+{
+  "enabledPlugins": {
+    "user": ["security-guidance", "code-review"],
+    "project": ["project-specific-plugin"]
+  }
+}
+```
+
+<Note>
+Plugins can ship a `settings.json` file with default configuration that is automatically applied when the plugin is enabled.
+</Note>
+
+## Hook Settings
+
+```json
+{
+  "allowManagedHooksOnly": true,
+  "disableAllHooks": false
+}
+```
+
+<ParamField path="allowManagedHooksOnly" type="boolean" default={false}>
+  When `true`, only managed hooks execute. User and project hooks are ignored.
+</ParamField>
+
+<ParamField path="disableAllHooks" type="boolean" default={false}>
+  When `true`, disables all hooks including managed hooks.
+  
+  Note: `disableAllHooks` in non-managed settings cannot disable managed hooks when `allowManagedHooksOnly` is set.
+</ParamField>
+
+## UI Settings
+
+### Theme
+
+```json
+{
+  "theme": "dark",
+  "reducedMotion": false
+}
+```
+
+<ParamField path="theme" type="string">
+  Color theme name (e.g., "dark", "light", "monokai").
+</ParamField>
+
+<ParamField path="reducedMotion" type="boolean" default={false}>
+  Enable reduced motion mode for accessibility.
+</ParamField>
+
+### Spinner Customization
+
+```json
+{
+  "spinnerVerbs": ["Thinking", "Processing", "Analyzing"],
+  "spinnerTipsOverride": {
+    "tips": [
+      "Custom tip 1",
+      "Custom tip 2"
+    ],
+    "excludeDefault": true
+  },
+  "showTurnDuration": true
+}
+```
+
+<ParamField path="spinnerVerbs" type="string[]">
+  Custom verbs for spinner display (e.g., "Thinking", "Analyzing").
+</ParamField>
+
+<ParamField path="spinnerTipsOverride" type="object">
+  Customize spinner tips.
+  
+  - `tips` - Array of custom tip strings
+  - `excludeDefault` - When `true`, only shows custom tips
+</ParamField>
+
+<ParamField path="showTurnDuration" type="boolean" default={true}>
+  Show duration messages like "Cooked for 1m 6s".
+</ParamField>
+
+## Model Settings
+
+### Default Model
+
+```json
+{
+  "defaultModel": "claude-sonnet-4.6",
+  "temperatureOverride": 1.0
+}
+```
+
+<ParamField path="defaultModel" type="string">
+  Default model to use for new sessions.
+  
+  Available models:
+  - `claude-sonnet-4.6`
+  - `claude-opus-4.6`
+  - `claude-sonnet-4.5`
+  - `claude-haiku-4`
+</ParamField>
+
+<ParamField path="temperatureOverride" type="number">
+  Override model temperature (0.0 - 1.0). Default is 1.0.
+</ParamField>
+
+### Thinking Mode
+
+```json
+{
+  "alwaysThinkingEnabled": true,
+  "verboseMode": true
+}
+```
+
+<ParamField path="alwaysThinkingEnabled" type="boolean" default={false}>
+  Enable extended thinking mode for all requests.
+</ParamField>
+
+<ParamField path="verboseMode" type="boolean" default={false}>
+  Show thinking blocks and detailed processing information.
+</ParamField>
+
+## Context Settings
+
+```json
+{
+  "plansDirectory": "~/.claude/plans",
+  "disableAllSkills": false
+}
+```
+
+<ParamField path="plansDirectory" type="string">
+  Custom directory for storing plan files.
+</ParamField>
+
+<ParamField path="disableAllSkills" type="boolean" default={false}>
+  Disable all skills (built-in and custom).
+</ParamField>
+
+## Tool Settings
+
+### Disallowed Tools
+
+```json
+{
+  "disallowedTools": ["WebSearch", "WebFetch", "MCPSearch"]
+}
+```
+
+<ParamField path="disallowedTools" type="string[]">
+  Tools that are completely unavailable (not shown to Claude).
+  
+  Common tools:
+  - `Bash`, `Read`, `Write`, `Edit`, `MultiEdit`
+  - `Grep`, `Glob`, `FileSearch`
+  - `WebSearch`, `WebFetch`
+  - `MCPSearch`, `MCPTool`
+  - `Task`, `TaskUpdate`, `TaskStop`
+</ParamField>
+
+### MCP Tool Search
+
+```json
+{
+  "mcpToolSearch": "auto:10"
+}
+```
+
+<ParamField path="mcpToolSearch" type="'auto' | 'auto:N' | 'always' | 'never'">
+  Configure MCP tool search behavior.
+  
+  - `"auto"` - Enable when tools exceed 10% of context
+  - `"auto:15"` - Enable when tools exceed 15% of context  
+  - `"always"` - Always use tool search
+  - `"never"` - Load all tools upfront
+</ParamField>
+
+## Environment Variables
+
+Settings can reference environment variables:
+
+```json
+{
+  "sandbox": {
+    "network": {
+      "httpProxyPort": "${HTTP_PROXY_PORT}"
+    }
+  }
+}
+```
+
+## Example Configurations
+
+### Strict Security
+
+Maximum security for enterprise environments:
+
+```json settings-strict.json
+{
+  "permissions": {
+    "disableBypassPermissionsMode": "disable",
+    "ask": ["Bash"],
+    "deny": ["WebSearch", "WebFetch"]
+  },
+  "allowManagedPermissionRulesOnly": true,
+  "allowManagedHooksOnly": true,
+  "strictKnownMarketplaces": [],
+  "sandbox": {
+    "autoAllowBashIfSandboxed": false,
+    "excludedCommands": [],
+    "network": {
+      "allowUnixSockets": [],
+      "allowAllUnixSockets": false,
+      "allowLocalBinding": false,
+      "allowedDomains": [],
+      "httpProxyPort": null,
+      "socksProxyPort": null
+    },
+    "enableWeakerNestedSandbox": false
+  }
+}
+```
+
+### Permissive Development
+
+Relaxed settings for local development:
+
+```json settings-lax.json
+{
+  "permissions": {
+    "disableBypassPermissionsMode": "disable"
+  },
+  "strictKnownMarketplaces": []
+}
+```
+
+### Sandbox Only
+
+Enforce sandboxing for all bash commands:
+
+```json settings-bash-sandbox.json
+{
+  "allowManagedPermissionRulesOnly": true,
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": false,
+    "allowUnsandboxedCommands": false,
+    "excludedCommands": [],
+    "network": {
+      "allowUnixSockets": [],
+      "allowAllUnixSockets": false,
+      "allowLocalBinding": false,
+      "allowedDomains": [],
+      "httpProxyPort": null,
+      "socksProxyPort": null
+    },
+    "enableWeakerNestedSandbox": false
+  }
+}
+```
+
+## Managed Settings Deployment
+
+Enterprise organizations can deploy managed settings via:
+
+### macOS (plist)
+
+```bash
+# Set managed settings location
+defaults write com.anthropic.claude-code managedSettingsPath \
+  "/etc/claude/managed-settings.json"
+```
+
+### Windows (Registry)
+
+```registry
+HKEY_LOCAL_MACHINE\SOFTWARE\Anthropic\ClaudeCode
+  managedSettingsPath = "C:\ProgramData\Claude\managed-settings.json"
+```
+
+### Environment Variable
+
+```bash
+export CLAUDE_MANAGED_SETTINGS_PATH="/etc/claude/managed-settings.json"
+```
+
+Learn more at [Settings Documentation](https://code.claude.com/docs/en/settings).
+
+## Validation
+
+Before deploying settings:
+
+1. **Validate JSON syntax**
+   ```bash
+   jq . settings.json
+   ```
+
+2. **Test locally**
+   ```bash
+   # Copy to local settings
+   cp settings.json ~/.claude/settings.local.json
+   claude
+   ```
+
+3. **Check for conflicts**
+   - Ensure managed settings take precedence
+   - Verify permission rules are correct
+   - Test with actual workflows
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Settings not taking effect">
+    Check:
+    - JSON is valid (use `jq` to validate)
+    - File is in correct location
+    - Restart Claude Code after changes
+    - Check for higher-priority settings overriding
+  </Accordion>
+
+  <Accordion title="Permission rules not working">
+    Verify:
+    - Pattern syntax is correct (`Bash(git:*)`)
+    - No typos in tool names
+    - `allowManagedPermissionRulesOnly` isn't blocking user rules
+    - Check `/config` to see active permissions
+  </Accordion>
+
+  <Accordion title="Sandbox not working">
+    Check:
+    - `sandbox.enabled` is `true`
+    - Required dependencies installed
+    - Platform support (Linux, macOS)
+    - Run `/sandbox` to see status
+  </Accordion>
+
+  <Accordion title="Managed settings being overridden">
+    Ensure:
+    - Using correct managed settings path
+    - File permissions are correct
+    - `allowManagedPermissionRulesOnly` is set in managed file
+    - No `disableAllHooks` in user settings
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="CLAUDE.md" icon="file-lines" href="/reference/config/claude-md">
+    Configure project context with CLAUDE.md files
+  </Card>
+  <Card title="plugin.json" icon="puzzle-piece" href="/reference/config/plugin-json">
+    Learn about plugin configuration
+  </Card>
+</CardGroup>

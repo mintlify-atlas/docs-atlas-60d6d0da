@@ -1,0 +1,495 @@
+---
+title: Natural Language Interface
+description: How Claude Code understands and processes natural language commands
+---
+
+Claude Code's natural language interface allows you to interact with your codebase conversationally, without memorizing command syntax or tool options. This page explains how the interface works and how to use it effectively.
+
+## Core Capabilities
+
+Claude Code understands:
+
+- **Intent**: What you want to accomplish
+- **Context**: Which files, features, or components you're referencing
+- **Scope**: How extensive the changes should be
+- **Constraints**: Limitations, patterns, or requirements to follow
+
+## Request Types
+
+### Code Generation
+
+Create new code from descriptions:
+
+```
+> Create a user authentication module with email/password login
+```
+
+Claude will:
+1. Analyze existing code patterns
+2. Generate implementation following your conventions
+3. Show complete code for review
+4. Create files after approval
+
+**Effective patterns**:
+- Specify technology: "using JWT tokens"
+- Reference examples: "similar to the session module"
+- List requirements: "with password hashing and rate limiting"
+
+### Code Modification
+
+Edit existing code:
+
+```
+> Add error handling to the database queries in @src/db/users.js
+```
+
+Claude will:
+1. Read the specified file
+2. Identify query locations
+3. Add appropriate error handling
+4. Show diff for review
+
+**Effective patterns**:
+- Use @-mentions: "in @src/api.js"
+- Be specific: "wrap in try-catch" vs "add error handling"
+- Reference locations: "in the login function" or "at line 45"
+
+### Code Explanation
+
+Understand existing code:
+
+```
+> Explain how the authentication middleware works
+```
+
+Claude will:
+1. Find relevant files
+2. Trace execution flow
+3. Explain logic with code references
+4. Highlight key components
+
+**Effective patterns**:
+- Ask about flow: "trace how requests are authenticated"
+- Request details: "explain the JWT validation logic"
+- Compare: "what's the difference between X and Y?"
+
+### Code Search
+
+Find code patterns:
+
+```
+> Where do we make API calls to the payment service?
+```
+
+Claude will:
+1. Search for relevant patterns
+2. Identify files and locations
+3. Summarize findings with references
+
+**Effective patterns**:
+- Search by functionality: "find all database queries"
+- Search by pattern: "locate all TODO comments"
+- Search by usage: "where is UserService used?"
+
+### Refactoring
+
+Restructure code:
+
+```
+> Extract the email validation logic into a separate utility function
+```
+
+Claude will:
+1. Identify the code to extract
+2. Create new function
+3. Update all call sites
+4. Show all changes
+
+**Effective patterns**:
+- Specify scope: "across all files" vs "just in this module"
+- Name components: "create a validateEmail function"
+- Describe structure: "move to @src/utils/validation.js"
+
+## File References
+
+### @-Mentions
+
+Reference files explicitly using `@`:
+
+```
+> Review @src/api/auth.js for security issues
+```
+
+**Autocomplete**: Type `@` to see file suggestions:
+- Files in current directory
+- Recently edited files
+- Frequently referenced files
+- Search by typing partial names
+
+**Path formats**:
+- Relative: `@src/utils/helpers.js`
+- Absolute: `@/home/user/project/file.js`
+- With line numbers: `@src/app.js:45`
+- With anchors: `@README.md#installation`
+
+### Implicit References
+
+Claude infers file references from context:
+
+```
+> Fix the bug in the login function
+```
+
+Claude searches for:
+- Files with "login" in name
+- Functions named "login"
+- Recent conversation files
+- Git changes
+
+### Multiple Files
+
+Reference multiple files:
+
+```
+> Refactor @src/auth.js and @src/middleware/auth.js to share common validation logic
+```
+
+Claude will:
+- Read both files
+- Identify shared code
+- Create common utilities
+- Update both files
+
+## Context Building
+
+Claude Code assembles context from multiple sources:
+
+### Conversation History
+
+```
+> Add unit tests for the function we just created
+```
+
+"the function we just created" references previous messages.
+
+### Project Structure
+
+```
+> Add a new API endpoint following our existing patterns
+```
+
+"existing patterns" triggers analysis of current API code.
+
+### Git State
+
+```
+> Commit these changes
+```
+
+"these changes" refers to current git diff.
+
+### Configuration
+
+```
+> Add a new feature following project conventions
+```
+
+"project conventions" reads from `.claude/CLAUDE.md` if present.
+
+## Slash Commands
+
+Slash commands provide shortcuts for common operations:
+
+### Built-in Commands
+
+| Command | Natural Equivalent |
+|---------|-------------------|
+| `/commit` | "Create a git commit for these changes" |
+| `/model` | "Change to a different AI model" |
+| `/clear` | "Start a new conversation" |
+| `/help` | "Show me available commands" |
+| `/resume` | "Continue a previous conversation" |
+
+### Custom Commands
+
+Create project-specific shortcuts in `.claude/commands/`:
+
+```markdown
+---
+description: Run full test suite
+allowed-tools: Bash(npm test:*)
+---
+
+Run all tests and display results:
+!`npm test`
+```
+
+Use with:
+```
+> /test
+```
+
+## Natural Language Patterns
+
+### Effective Requests
+
+<Tip>
+  **Be specific**: Include file references, function names, and clear requirements.
+</Tip>
+
+**Good**:
+```
+> Add input validation to the createUser function in @src/api/users.js.
+  Validate email format and password strength (min 8 chars, 1 number, 1 special).
+```
+
+**Less effective**:
+```
+> Add validation to createUser
+```
+
+### Iterative Refinement
+
+<Tip>
+  **Iterate**: Start broad, then refine based on results.
+</Tip>
+
+**First request**:
+```
+> Add caching to the API
+```
+
+**Clarifying response**: "Which endpoints should be cached? How long should cache last?"
+
+**Refined request**:
+```
+> Cache GET /users/:id responses for 5 minutes using Redis
+```
+
+### Contextual Follow-ups
+
+<Tip>
+  **Use pronouns**: Reference previous context naturally.
+</Tip>
+
+```
+> Create a user service
+> Add authentication to it
+> Now add password reset functionality
+> Write unit tests for these methods
+```
+
+## Advanced Techniques
+
+### Conditional Logic
+
+Express complex requirements:
+
+```
+> If the user is authenticated, show their profile. 
+  Otherwise, redirect to login.
+```
+
+### Multiple Steps
+
+Describe multi-step workflows:
+
+```
+> Create a new feature branch, implement the user profile page,
+  write tests, commit the changes, and create a pull request.
+```
+
+### Constraints and Preferences
+
+Specify how to implement:
+
+```
+> Refactor to use async/await instead of promises.
+  Keep the existing error handling logic.
+```
+
+### Examples and References
+
+Provide examples:
+
+```
+> Create an API endpoint similar to /users/:id but for products.
+  Use the same authentication and validation patterns.
+```
+
+## Tool Selection
+
+Claude automatically selects appropriate tools:
+
+| Request | Tools Used |
+|---------|------------|
+| "Show me @src/app.js" | Read |
+| "Fix typo in @README.md" | Read, Edit |
+| "Create @tests/api.test.js" | Write |
+| "Find all TODO comments" | Grep |
+| "Run the tests" | Bash |
+| "Where are the API routes defined?" | Grep, Glob |
+
+**Multi-tool workflows**:
+```
+> Add a new API endpoint for user search
+```
+
+Tools used:
+1. Glob: Find existing API files
+2. Read: Understand current patterns
+3. Edit: Update routes file
+4. Write: Create handler file
+5. Bash: Run tests
+
+## Command Syntax
+
+While natural language is preferred, Claude understands technical syntax:
+
+### Shell Commands
+
+Embed shell commands:
+```
+> Run `npm test` and fix any failing tests
+```
+
+### Code Snippets
+
+Include code examples:
+```
+> Replace the current implementation with:
+  ```javascript
+  async function fetchUser(id) {
+    return await db.query('SELECT * FROM users WHERE id = ?', [id]);
+  }
+  ```
+```
+
+### Regex Patterns
+
+Use patterns for search:
+```
+> Find all functions matching /async\s+function\s+\w+/
+```
+
+## Special Operators
+
+### Inline Shell Execution
+
+Run commands inline with `!`:
+```markdown
+Current branch: !`git branch --show-current`
+```
+
+### Variable Substitution
+
+In custom commands, use `$ARGUMENTS`:
+```markdown
+Analyze the issue:
+$ARGUMENTS
+```
+
+## Error Handling
+
+When requests are ambiguous:
+
+**Clarifying Questions**:
+```
+You: Add authentication
+Claude: Which authentication method would you like?
+        - OAuth (Google, GitHub)
+        - Email/password
+        - API keys
+```
+
+**Suggestions**:
+```
+You: Fix the bug
+Claude: I don't see recent errors. Could you:
+        - Describe the bug
+        - Provide error messages
+        - Point to affected files
+```
+
+**Alternatives**:
+```
+You: Add logging
+Claude: I can:
+        1. Add console.log statements
+        2. Integrate Winston logger
+        3. Set up structured logging
+        Which would you prefer?
+```
+
+## Best Practices
+
+<Tip>
+  **Provide context**: Mention files, functions, or components explicitly.
+</Tip>
+
+<Tip>
+  **State requirements**: Include constraints, patterns, or preferences upfront.
+</Tip>
+
+<Tip>
+  **Use examples**: Reference similar code or describe desired behavior.
+</Tip>
+
+<Tip>
+  **Iterate**: Start with simple requests, refine based on results.
+</Tip>
+
+<Tip>
+  **Be conversational**: Claude understands natural language—write like you're talking to a colleague.
+</Tip>
+
+## Common Patterns
+
+### Code Review Requests
+
+```
+> Review @src/api/payments.js for:
+  - Security vulnerabilities
+  - Error handling gaps
+  - Performance issues
+```
+
+### Documentation Requests
+
+```
+> Add JSDoc comments to all exported functions in @src/utils/
+```
+
+### Testing Requests
+
+```
+> Write unit tests for the authentication service.
+  Cover success cases, validation errors, and authentication failures.
+```
+
+### Debugging Requests
+
+```
+> I'm getting "Cannot read property 'id' of undefined" at line 67 of @src/api.js.
+  Help me fix it.
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Agents" icon="users" href="/concepts/agents">
+    Learn about specialized background agents
+  </Card>
+  
+  <Card title="Codebase Understanding" icon="book" href="/concepts/codebase-understanding">
+    How Claude analyzes your code
+  </Card>
+  
+  <Card title="Task Automation" icon="robot" href="/guides/task-automation">
+    Create custom commands and workflows
+  </Card>
+  
+  <Card title="Configuration" icon="gear" href="/configuration/settings">
+    Customize Claude Code behavior
+  </Card>
+</CardGroup>

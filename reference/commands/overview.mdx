@@ -1,0 +1,211 @@
+---
+title: Commands Overview
+description: Understanding the command system in Claude Code - slash commands, custom commands, and command execution
+---
+
+Claude Code provides a powerful command system that allows you to interact with the AI assistant through natural language or structured commands.
+
+## Command Types
+
+Claude Code supports three types of commands:
+
+<CardGroup cols={3}>
+  <Card title="Built-in Commands" icon="terminal" href="/reference/commands/built-in">
+    Core commands that ship with Claude Code
+  </Card>
+  <Card title="Slash Commands" icon="slash" href="/reference/commands/slash-commands">
+    User-defined commands in `.claude/commands/`
+  </Card>
+  <Card title="Plugin Commands" icon="puzzle-piece" href="/plugins/development/commands">
+    Commands provided by installed plugins
+  </Card>
+</CardGroup>
+
+## Command Execution
+
+### Interactive Mode
+
+In interactive mode, commands are executed in the terminal session:
+
+```bash
+# Start Claude Code
+claude
+
+# Execute a command
+/help
+/model
+/commit
+```
+
+### Headless Mode
+
+You can execute commands directly from the command line:
+
+```bash
+# Run a command with a prompt
+claude -p "Analyze the codebase structure"
+
+# Resume a previous session
+claude --resume
+
+# Start in a specific directory
+claude --workdir /path/to/project
+```
+
+## Command Structure
+
+Commands are defined using markdown files with YAML frontmatter:
+
+```markdown
+---
+description: Brief description of what the command does
+allowed-tools: Bash(git:*), Read, Write
+---
+
+Command instructions and context for Claude.
+
+You can use:
+- $ARGUMENTS for all arguments
+- $ARGUMENTS[0] for the first argument
+- !\`command\` for inline command execution
+```
+
+<Note>
+The frontmatter controls command permissions and behavior, while the body provides instructions to Claude.
+</Note>
+
+## Command Arguments
+
+Commands can accept arguments that are passed to Claude:
+
+### Full Arguments
+
+Access all arguments using `$ARGUMENTS`:
+
+```markdown
+# In your command file
+Analyze the following: $ARGUMENTS
+```
+
+```bash
+# Usage
+/analyze src/main.js and src/utils.js
+# Claude receives: "Analyze the following: src/main.js and src/utils.js"
+```
+
+### Indexed Arguments
+
+Access specific arguments using bracket notation:
+
+```markdown
+# In your command file
+Compare $ARGUMENTS[0] with $ARGUMENTS[1]
+```
+
+```bash
+# Usage
+/compare file1.js file2.js
+# Claude receives: "Compare file1.js with file2.js"
+```
+
+## Inline Command Execution
+
+Commands can execute shell commands inline and include their output:
+
+```markdown
+---
+description: Show current git status
+allowed-tools: Bash(git:*)
+---
+
+## Current Status
+
+Branch: !\`git branch --show-current\`
+
+Changes:
+!\`git status --short\`
+```
+
+<Warning>
+Inline commands (!\`...\`) execute immediately when the command is loaded. Use them for gathering context, not for making changes.
+</Warning>
+
+## Permission Model
+
+Commands can specify which tools Claude is allowed to use:
+
+<ParamField path="allowed-tools" type="string | string[]">
+  List of tools the command can use. Examples:
+  - `Bash(git:*)` - Only git commands
+  - `Bash(./scripts/gh.sh:*)` - Only specific script
+  - `Read, Write, Edit` - File operations
+  - `Bash` - All bash commands (requires user approval)
+</ParamField>
+
+### Tool Permission Syntax
+
+```yaml
+# Allow only specific commands
+allowed-tools: Bash(git status:*), Bash(git diff:*)
+
+# Allow a specific script with any arguments
+allowed-tools: Bash(./scripts/deploy.sh:*)
+
+# Allow multiple tool types
+allowed-tools: Bash(git:*), Read, Write, Grep
+
+# Allow all bash (requires approval)
+allowed-tools: Bash
+```
+
+## Session ID Variable
+
+Commands can access the current session ID:
+
+```markdown
+---
+description: Log current session
+---
+
+Session ID: ${CLAUDE_SESSION_ID}
+
+This is useful for:
+- Creating session-specific files
+- Logging and tracking
+- Integration with external tools
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Keep commands focused">
+    Each command should do one thing well. If a command becomes too complex, consider breaking it into multiple commands or using an agent instead.
+  </Accordion>
+
+  <Accordion title="Use descriptive names">
+    Command names should clearly indicate what they do. Use kebab-case for multi-word commands: `/commit-push-pr` instead of `/cpp`.
+  </Accordion>
+
+  <Accordion title="Minimize tool permissions">
+    Only grant the minimum permissions needed. Use specific command patterns like `Bash(git:*)` instead of `Bash`.
+  </Accordion>
+
+  <Accordion title="Document inline commands">
+    When using inline execution (!\`...\`), add comments explaining what information is being gathered.
+  </Accordion>
+
+  <Accordion title="Test with different inputs">
+    Test your commands with various argument combinations to ensure they handle edge cases properly.
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Built-in Commands" icon="list" href="/reference/commands/built-in">
+    Explore all built-in commands available in Claude Code
+  </Card>
+  <Card title="Create Slash Commands" icon="code" href="/reference/commands/slash-commands">
+    Learn how to create your own custom commands
+  </Card>
+</CardGroup>

@@ -1,0 +1,565 @@
+---
+title: Settings
+description: Configure Claude Code behavior, permissions, and security policies
+---
+
+Claude Code is highly configurable through settings files at multiple levels. This page covers all available settings and how to use them effectively.
+
+## Settings Hierarchy
+
+Settings are loaded from multiple locations with increasing precedence:
+
+<Steps>
+  <Step title="Managed Settings (Enterprise)">
+    `~/.claude/managed-settings.json` - Set by administrators via macOS plist or Windows Registry. Cannot be overridden by users.
+  </Step>
+  
+  <Step title="User Settings">
+    `~/.claude/settings.json` - Global user preferences applying to all projects.
+  </Step>
+  
+  <Step title="Project Settings">
+    `<project>/.claude/settings.json` - Project-specific configuration shared via git.
+  </Step>
+  
+  <Step title="Local Settings">
+    `<project>/.claude/settings.local.json` - Local overrides not committed to git (add to .gitignore).
+  </Step>
+</Steps>
+
+<Note>
+  Later settings in the hierarchy override earlier ones, except for managed settings which cannot be overridden.
+</Note>
+
+## Accessing Settings
+
+### In-App Configuration
+
+```
+> /config
+```
+
+Opens interactive settings editor with:
+- Search functionality
+- Setting descriptions
+- Current values
+- Valid options
+
+### Manual Editing
+
+Edit files directly:
+
+```bash
+# User settings
+$EDITOR ~/.claude/settings.json
+
+# Project settings
+$EDITOR .claude/settings.json
+
+# Local settings
+$EDITOR .claude/settings.local.json
+```
+
+## Core Settings
+
+### Model Configuration
+
+```json
+{
+  "model": "claude-sonnet-4.6",
+  "temperatureOverride": null,
+  "alwaysThinkingEnabled": false,
+  "fastModeEnabled": false
+}
+```
+
+**Available models**:
+- `claude-sonnet-4.6`: Fast, general-purpose (default)
+- `claude-opus-4.6`: Complex tasks, deep reasoning
+- `claude-sonnet-4.5`: Legacy support
+
+**Temperature**: Override default (0.0-1.0). Leave `null` for model defaults.
+
+**Thinking mode**: Enable extended thinking for complex problems.
+
+**Fast mode**: Trade accuracy for speed (Opus 4.6 only).
+
+### Permission System
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Grep",
+      "Glob",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(npm test:*)"
+    ],
+    "ask": [
+      "Edit",
+      "Write",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
+    ],
+    "deny": [
+      "Bash(rm -rf:*)",
+      "Bash(git push --force:*)",
+      "WebSearch",
+      "WebFetch"
+    ],
+    "disableBypassPermissionsMode": "disable"
+  }
+}
+```
+
+**Permission levels**:
+- `allow`: Execute without asking
+- `ask`: Prompt for approval
+- `deny`: Block execution
+
+**Pattern syntax**:
+- `Tool`: All uses of tool
+- `Tool(arg:*)`: Tool with specific argument pattern
+- `*`: Wildcard matching
+
+**Bypass mode**: `disableBypassPermissionsMode: "disable"` prevents `--dangerously-skip-permissions` flag.
+
+### Sandbox Configuration
+
+```json
+{
+  "sandbox": {
+    "dangerouslyDisableSandbox": false,
+    "autoAllowBashIfSandboxed": false,
+    "excludedCommands": ["git", "npm", "node"],
+    "network": {
+      "allowedDomains": ["api.github.com", "npmjs.org"],
+      "allowLocalBinding": false,
+      "allowAllUnixSockets": false,
+      "allowUnixSockets": [],
+      "httpProxyPort": null,
+      "socksProxyPort": null
+    },
+    "enableWeakerNestedSandbox": false
+  }
+}
+```
+
+**Sandbox mode**: Isolates bash commands using namespaces (Linux) or restricted environment.
+
+**Excluded commands**: Run outside sandbox (e.g., git, npm).
+
+**Network restrictions**: Limit domains, disable local binding, configure proxies.
+
+**Auto-allow**: Automatically approve sandboxed bash commands.
+
+### Tool Configuration
+
+```json
+{
+  "disallowedTools": ["WebSearch", "WebFetch"],
+  "mcpToolSearch": "auto",
+  "enableToolSearch": false
+}
+```
+
+**Disallowed tools**: Block specific tools entirely.
+
+**MCP tool search**: 
+- `true`: Always defer MCP tools to search
+- `false`: Load all MCP tools upfront
+- `auto` or `auto:N`: Auto-enable when tools exceed N% of context (default: 10%)
+
+**Tool search**: Enable deferred tool discovery for large tool sets.
+
+### UI Customization
+
+```json
+{
+  "theme": "dark",
+  "verbose": false,
+  "showTurnDuration": true,
+  "reducedMotion": false,
+  "spinnerVerbs": ["Thinking", "Processing", "Working"],
+  "spinnerTipsOverride": {
+    "tips": ["Custom tip 1", "Custom tip 2"],
+    "excludeDefault": false
+  }
+}
+```
+
+**Theme**: `dark`, `light`, or `auto`
+
+**Verbose**: Show thinking blocks and detailed tool output
+
+**Turn duration**: Display "Cooked for X seconds" messages
+
+**Reduced motion**: Disable animations
+
+**Spinner customization**: Custom verbs and tips
+
+### Session Management
+
+```json
+{
+  "sessionHistoryLimit": 100,
+  "autoCompact": true,
+  "compactThreshold": 0.85,
+  "plansDirectory": "~/.claude/plans"
+}
+```
+
+**History limit**: Number of sessions to keep in resume list
+
+**Auto-compact**: Automatically compact when nearing context limit
+
+**Compact threshold**: Context usage percentage to trigger compaction (0.0-1.0)
+
+**Plans directory**: Where to store plan files
+
+## Enterprise Settings
+
+Managed settings enforce organizational policies:
+
+### Restricting Plugins
+
+```json
+{
+  "strictKnownMarketplaces": [],
+  "allowManagedPermissionRulesOnly": true,
+  "allowManagedHooksOnly": true
+}
+```
+
+**Strict marketplaces**: Empty array blocks all marketplace plugins
+
+**Managed-only rules**: Users can't create permission rules
+
+**Managed-only hooks**: Users can't create event hooks
+
+### Security Policies
+
+```json
+{
+  "permissions": {
+    "disableBypassPermissionsMode": "disable",
+    "ask": ["Bash"],
+    "deny": ["WebSearch", "WebFetch"]
+  },
+  "sandbox": {
+    "autoAllowBashIfSandboxed": false,
+    "excludedCommands": [],
+    "network": {
+      "allowedDomains": ["github.com", "npmjs.org"],
+      "allowLocalBinding": false
+    }
+  },
+  "disableAllHooks": false
+}
+```
+
+**Example: Strict Security**
+
+```json
+{
+  "permissions": {
+    "disableBypassPermissionsMode": "disable",
+    "ask": ["Bash"],
+    "deny": ["WebSearch", "WebFetch"]
+  },
+  "allowManagedPermissionRulesOnly": true,
+  "allowManagedHooksOnly": true,
+  "strictKnownMarketplaces": [],
+  "sandbox": {
+    "autoAllowBashIfSandboxed": false,
+    "excludedCommands": [],
+    "network": {
+      "allowedDomains": ["api.github.com"],
+      "allowLocalBinding": false
+    },
+    "enableWeakerNestedSandbox": false
+  }
+}
+```
+
+See [settings examples](https://github.com/anthropics/claude-code/tree/main/examples/settings) for more configurations.
+
+### Deploying Managed Settings
+
+**macOS** (via plist):
+```bash
+defaults write com.anthropic.claude-code ManagedSettings -dict \
+  permissions -dict \
+    disableBypassPermissionsMode "disable"
+```
+
+**Windows** (via Registry):
+```powershell
+New-ItemProperty -Path "HKLM:\Software\Anthropic\ClaudeCode" `
+  -Name "ManagedSettings" `
+  -Value '{"permissions":{"disableBypassPermissionsMode":"disable"}}'
+```
+
+See [managed settings documentation](https://code.claude.com/docs/en/settings#settings-files) for details.
+
+## Advanced Settings
+
+### Context Management
+
+```json
+{
+  "CLAUDE_CODE_DISABLE_1M_CONTEXT": false,
+  "enablePromptCaching": true
+}
+```
+
+**Disable 1M context**: Limit to 200K context window
+
+**Prompt caching**: Enable caching for performance (recommended)
+
+### Background Tasks
+
+```json
+{
+  "disableBackgroundTasks": false
+}
+```
+
+**Disable background tasks**: Prevent agent backgrounding and Ctrl+B shortcut
+
+### Simple Mode
+
+```json
+{
+  "CLAUDE_CODE_SIMPLE": false
+}
+```
+
+Or via environment:
+```bash
+export CLAUDE_CODE_SIMPLE=true
+```
+
+**Simple mode disables**:
+- Skills
+- Session memory
+- Custom agents
+- MCP tools
+- Attachments
+- Hooks
+- CLAUDE.md loading
+
+Use for faster startup and minimal overhead.
+
+### Debugging
+
+```json
+{
+  "logLevel": "info",
+  "debugMode": false
+}
+```
+
+**Log levels**: `error`, `warn`, `info`, `debug`, `trace`
+
+**Debug mode**: Enable verbose logging and diagnostics
+
+### Telemetry
+
+```json
+{
+  "disableTelemetry": false,
+  "helpImproveClaudeCode": true
+}
+```
+
+**Telemetry**: Usage data for product improvement
+
+**Help improve**: Share feedback data (opt-in)
+
+See [data usage policies](https://code.claude.com/docs/en/data-usage) for details.
+
+## Environment Variables
+
+Settings can also be configured via environment variables:
+
+```bash
+# API Configuration
+export ANTHROPIC_API_KEY="your-key"
+export ANTHROPIC_BASE_URL="https://api.anthropic.com"
+
+# Model Settings
+export CLAUDE_CODE_MODEL="claude-sonnet-4.6"
+export CLAUDE_CODE_TEMPERATURE="0.7"
+
+# Feature Flags
+export CLAUDE_CODE_SIMPLE=true
+export CLAUDE_CODE_DISABLE_1M_CONTEXT=true
+export CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=true
+export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=true
+
+# System Configuration
+export CLAUDE_CODE_TMPDIR="/custom/tmp"
+export CLAUDE_BASH_NO_LOGIN=true
+
+# Plugin Configuration
+export CLAUDE_CODE_PLUGIN_GIT_TIMEOUT_MS=120000
+export ENABLE_CLAUDEAI_MCP_SERVERS=false
+
+# Account Information (SDK)
+export CLAUDE_CODE_ACCOUNT_UUID="..."
+export CLAUDE_CODE_USER_EMAIL="..."
+export CLAUDE_CODE_ORGANIZATION_UUID="..."
+```
+
+## Configuration Examples
+
+### Development Team
+
+```json
+{
+  "model": "claude-sonnet-4.6",
+  "permissions": {
+    "allow": [
+      "Read", "Grep", "Glob",
+      "Bash(git:*)",
+      "Bash(npm:*)",
+      "Bash(yarn:*)"
+    ],
+    "ask": ["Edit", "Write", "Bash"]
+  },
+  "verbose": true,
+  "theme": "dark"
+}
+```
+
+### Solo Developer
+
+```json
+{
+  "model": "claude-opus-4.6",
+  "permissions": {
+    "allow": ["*"],
+    "deny": [
+      "Bash(rm -rf:*)",
+      "Bash(git push --force:*)"
+    ]
+  },
+  "autoCompact": true,
+  "fastModeEnabled": true
+}
+```
+
+### Enterprise Restricted
+
+```json
+{
+  "model": "claude-sonnet-4.6",
+  "permissions": {
+    "ask": ["Bash", "Edit", "Write"],
+    "deny": ["WebSearch", "WebFetch"],
+    "disableBypassPermissionsMode": "disable"
+  },
+  "allowManagedPermissionRulesOnly": true,
+  "allowManagedHooksOnly": true,
+  "strictKnownMarketplaces": [],
+  "sandbox": {
+    "network": {
+      "allowedDomains": ["github.com"],
+      "allowLocalBinding": false
+    }
+  },
+  "disallowedTools": ["WebSearch", "WebFetch"]
+}
+```
+
+## Troubleshooting
+
+### Settings Not Applied
+
+**Issue**: Changes to settings file don't take effect
+
+**Solutions**:
+- Restart Claude Code
+- Check JSON syntax (use JSON validator)
+- Verify file location
+- Check for managed settings override
+
+### Permission Errors
+
+**Issue**: Operations blocked unexpectedly
+
+**Solutions**:
+- Check permission rules in all settings files
+- Look for `deny` rules in managed settings
+- Verify pattern syntax
+- Run `claude doctor` to diagnose
+
+### Sandbox Issues
+
+**Issue**: Commands fail in sandbox mode
+
+**Solutions**:
+- Add to `excludedCommands`
+- Configure network allowlist
+- Check command compatibility with sandbox
+- Disable sandbox for testing (not recommended for production)
+
+## Best Practices
+
+<Tip>
+  **Use project settings**: Share common configuration via git
+</Tip>
+
+<Tip>
+  **Use local settings**: Keep personal preferences in `.local.json` (gitignored)
+</Tip>
+
+<Tip>
+  **Start permissive**: Begin with `ask` rules, create `allow` rules as you go
+</Tip>
+
+<Tip>
+  **Document decisions**: Add comments to JSON (use JSON5 if editor supports)
+</Tip>
+
+<Tip>
+  **Test managed settings**: Apply to local files before deploying organization-wide
+</Tip>
+
+## Validation
+
+Validate settings before deploying:
+
+```bash
+# Check settings file syntax
+claude config validate
+
+# Dry-run with settings
+claude --config-file test-settings.json doctor
+
+# Validate plugin
+claude plugin validate ./path/to/plugin
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Project Configuration" icon="folder" href="/configuration/project-config">
+    Configure project-specific behavior
+  </Card>
+  
+  <Card title="Environment Variables" icon="terminal" href="/configuration/environment-variables">
+    Use environment-based configuration
+  </Card>
+  
+  <Card title="Task Automation" icon="robot" href="/guides/task-automation">
+    Create custom commands and hooks
+  </Card>
+  
+  <Card title="Plugins" icon="puzzle-piece" href="/plugins/overview">
+    Extend Claude Code with plugins
+  </Card>
+</CardGroup>

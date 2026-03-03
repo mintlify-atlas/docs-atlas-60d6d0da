@@ -1,0 +1,329 @@
+---
+title: Installation
+description: Install Claude Code on macOS, Linux, or Windows using multiple installation methods
+---
+
+Claude Code requires Node.js 18+ and is available through multiple installation methods.
+
+<Note>
+  Installation via npm is deprecated. Use one of the recommended methods below for the best experience.
+</Note>
+
+## Prerequisites
+
+- **Node.js 18 or higher**: Required for running Claude Code
+- **Git**: Required for repository operations and version control features
+- **Terminal**: Command line access (bash, zsh, PowerShell, etc.)
+
+## Installation Methods
+
+### macOS / Linux (Recommended)
+
+The recommended installation method uses our installation script:
+
+```bash
+curl -fsSL https://claude.ai/install.sh | bash
+```
+
+<Tip>
+  This method automatically detects your system and installs the appropriate version.
+</Tip>
+
+### Homebrew (macOS / Linux)
+
+If you prefer package managers:
+
+```bash
+brew install --cask claude-code
+```
+
+### Windows (Recommended)
+
+For Windows, use our PowerShell installation script:
+
+```powershell
+irm https://claude.ai/install.ps1 | iex
+```
+
+### WinGet (Windows)
+
+Alternatively, use the Windows Package Manager:
+
+```powershell
+winget install Anthropic.ClaudeCode
+```
+
+### NPM (Deprecated)
+
+<Warning>
+  NPM installation is deprecated and will be removed in a future version. Use one of the recommended methods above.
+</Warning>
+
+If you still need to use npm:
+
+```bash
+npm install -g @anthropic-ai/claude-code
+```
+
+## Verification
+
+After installation, verify Claude Code is installed correctly:
+
+```bash
+claude --version
+```
+
+You should see the version number displayed.
+
+## First Run
+
+Navigate to your project directory and run:
+
+```bash
+claude
+```
+
+On first run, Claude Code will:
+1. Prompt you to authenticate with your Anthropic account
+2. Initialize your project configuration
+3. Start an interactive session
+
+### Authentication
+
+Claude Code supports multiple authentication methods:
+
+<CodeGroup>
+```bash OAuth (Recommended)
+# Claude will open your browser for authentication
+claude
+```
+
+```bash API Key
+# Set your API key as an environment variable
+export ANTHROPIC_API_KEY=your_api_key_here
+claude
+```
+
+```bash CLI Login
+# Use the dedicated login command
+claude auth login
+```
+</CodeGroup>
+
+<Tip>
+  If the browser doesn't open automatically during OAuth, press `c` to copy the URL and paste it into your browser.
+</Tip>
+
+## Platform-Specific Notes
+
+### macOS
+
+**Permissions**: You may need to grant terminal permissions in System Preferences > Security & Privacy.
+
+**Gatekeeper**: On first run, macOS may block the executable. Go to System Preferences > Security & Privacy and click "Allow Anyway."
+
+### Linux
+
+**glibc Compatibility**: Claude Code requires glibc 2.30 or later. For older systems (e.g., RHEL 8), use the npm installation method.
+
+**Permissions**: Ensure the installation directory is in your PATH:
+
+```bash
+export PATH="$HOME/.claude/bin:$PATH"
+```
+
+Add this to your `~/.bashrc` or `~/.zshrc` for persistence.
+
+### Windows
+
+**PowerShell Execution Policy**: You may need to allow script execution:
+
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+**Git Bash**: Claude Code works with Git Bash, PowerShell, and Command Prompt.
+
+**WSL2**: For WSL2 users, follow the Linux installation instructions within your WSL environment.
+
+## Installation Locations
+
+Claude Code installs to the following default locations:
+
+| Platform | Installation Path |
+|----------|------------------|
+| macOS (script) | `~/.claude/bin/claude` |
+| macOS (Homebrew) | `/usr/local/bin/claude` |
+| Linux | `~/.claude/bin/claude` |
+| Windows | `%LOCALAPPDATA%\Programs\ClaudeCode` |
+
+## Configuration Files
+
+After installation, Claude Code creates configuration files:
+
+```
+~/.claude/
+├── config.json              # Global configuration
+├── settings.json            # User settings
+├── managed-settings.json    # Enterprise settings
+└── backups/                 # Configuration backups
+```
+
+Project-specific configuration lives in:
+
+```
+project-root/
+└── .claude/
+    ├── settings.json        # Project settings
+    ├── settings.local.json  # Local overrides
+    ├── commands/            # Custom slash commands
+    ├── agents/              # Custom agents
+    ├── skills/              # Custom skills
+    └── hooks/               # Event hooks
+```
+
+## Update Management
+
+Claude Code automatically checks for updates and can update itself:
+
+```bash
+# Check for updates
+claude doctor
+
+# View update channel (stable or latest)
+claude config
+```
+
+<Note>
+  Update channels can be configured in settings. The `stable` channel receives tested releases, while `latest` gets new features faster.
+</Note>
+
+## Shell Completion
+
+Enable shell completion for better CLI experience:
+
+<CodeGroup>
+```bash bash
+# Add to ~/.bashrc
+eval "$(claude completion bash)"
+```
+
+```bash zsh
+# Add to ~/.zshrc
+eval "$(claude completion zsh)"
+```
+
+```powershell PowerShell
+# Add to PowerShell profile
+claude completion powershell | Out-String | Invoke-Expression
+```
+</CodeGroup>
+
+## Troubleshooting
+
+### Installation Fails
+
+**Issue**: Installation script fails or hangs
+
+**Solutions**:
+- Check internet connection
+- Verify Node.js 18+ is installed: `node --version`
+- Try alternative installation method (Homebrew, WinGet)
+- Check firewall/proxy settings
+
+### Command Not Found
+
+**Issue**: `claude: command not found` after installation
+
+**Solutions**:
+- Restart your terminal
+- Check PATH includes Claude installation directory
+- For manual installations, add to PATH:
+  ```bash
+  export PATH="$HOME/.claude/bin:$PATH"
+  ```
+
+### Authentication Issues
+
+**Issue**: OAuth redirect doesn't work
+
+**Solutions**:
+- Press `c` to copy URL manually
+- Check browser settings allow opening localhost URLs
+- Use API key authentication instead:
+  ```bash
+  export ANTHROPIC_API_KEY=your_key
+  ```
+
+### Performance Issues
+
+**Issue**: Claude Code is slow to start
+
+**Solutions**:
+- Use simple mode for faster startup:
+  ```bash
+  export CLAUDE_CODE_SIMPLE=true
+  ```
+- Check MCP server connections (may slow startup)
+- Review plugin configurations
+
+### System-Specific Issues
+
+<Tip>
+  Run `claude doctor` to diagnose common issues. It checks installation method, version, configuration, and permissions.
+</Tip>
+
+## Uninstallation
+
+To remove Claude Code:
+
+<CodeGroup>
+```bash macOS/Linux (script install)
+rm -rf ~/.claude
+# Remove from PATH in ~/.bashrc or ~/.zshrc
+```
+
+```bash Homebrew
+brew uninstall --cask claude-code
+rm -rf ~/.claude
+```
+
+```powershell Windows (script install)
+Remove-Item -Recurse -Force "$env:LOCALAPPDATA\Programs\ClaudeCode"
+Remove-Item -Recurse -Force "$env:USERPROFILE\.claude"
+```
+
+```powershell WinGet
+winget uninstall Anthropic.ClaudeCode
+Remove-Item -Recurse -Force "$env:USERPROFILE\.claude"
+```
+
+```bash NPM
+npm uninstall -g @anthropic-ai/claude-code
+rm -rf ~/.claude
+```
+</CodeGroup>
+
+<Warning>
+  Uninstalling removes all global configuration. Project-specific `.claude/` directories in your repositories are not affected.
+</Warning>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get started with your first commands
+  </Card>
+  
+  <Card title="Configuration" icon="gear" href="/configuration/settings">
+    Customize settings and permissions
+  </Card>
+  
+  <Card title="CLI Reference" icon="terminal" href="/reference/commands/overview">
+    Learn all available CLI commands
+  </Card>
+  
+  <Card title="Core Concepts" icon="lightbulb" href="/concepts/overview">
+    Understand how Claude Code works
+  </Card>
+</CardGroup>

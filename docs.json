@@ -1,122 +1,131 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "Claude Code",
+  "theme": "aspen",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#191919",
+    "light": "#F4F0E8",
+    "dark": "#191919"
   },
-  "favicon": "/favicon.svg",
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/anthropics/claude-code"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/anthropics/claude-code"
+    }
+  },
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Documentation",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Get Started",
             "pages": [
-              "index",
-              "quickstart",
-              "development"
+              "introduction",
+              "installation",
+              "quickstart"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Core Concepts",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "concepts/overview",
+              "concepts/natural-language",
+              "concepts/agents",
+              "concepts/codebase-understanding"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Guides",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
+              "guides/git-workflows",
+              "guides/code-review",
+              "guides/task-automation",
+              "guides/ide-integration"
             ]
           },
           {
-            "group": "AI tools",
+            "group": "Configuration",
             "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "configuration/settings",
+              "configuration/project-config",
+              "configuration/environment-variables"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "Plugins",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Plugin System",
             "pages": [
-              "api-reference/introduction"
+              "plugins/overview",
+              "plugins/installation",
+              "plugins/marketplace"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Bundled Plugins",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "plugins/bundled/agent-sdk-dev",
+              "plugins/bundled/code-review",
+              "plugins/bundled/commit-commands",
+              "plugins/bundled/feature-dev",
+              "plugins/bundled/frontend-design",
+              "plugins/bundled/hookify",
+              "plugins/bundled/plugin-dev",
+              "plugins/bundled/pr-review-toolkit"
+            ]
+          },
+          {
+            "group": "Plugin Development",
+            "pages": [
+              "plugins/development/getting-started",
+              "plugins/development/structure",
+              "plugins/development/commands",
+              "plugins/development/agents",
+              "plugins/development/hooks",
+              "plugins/development/skills",
+              "plugins/development/mcp-integration"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Commands",
+            "pages": [
+              "reference/commands/overview",
+              "reference/commands/built-in",
+              "reference/commands/slash-commands"
+            ]
+          },
+          {
+            "group": "Hooks",
+            "pages": [
+              "reference/hooks/overview",
+              "reference/hooks/lifecycle-events",
+              "reference/hooks/examples"
+            ]
+          },
+          {
+            "group": "Configuration Files",
+            "pages": [
+              "reference/config/settings-json",
+              "reference/config/claude-md",
+              "reference/config/plugin-json"
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
-    }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
-  },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
-    }
+    ]
   }
 }

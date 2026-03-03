@@ -1,0 +1,140 @@
+---
+title: Plugins Overview
+description: Extend Claude Code with custom commands, agents, skills, and hooks through the plugin system
+---
+
+Claude Code plugins are extensions that enhance Claude Code with custom slash commands, specialized agents, hooks, and MCP servers. Plugins can be shared across projects and teams, providing consistent tooling and workflows.
+
+## What Are Claude Code Plugins?
+
+Plugins extend Claude Code's functionality in four main ways:
+
+<CardGroup cols={2}>
+  <Card title="Commands" icon="terminal">
+    Custom slash commands that automate common workflows like `/commit`, `/code-review`, or `/deploy`
+  </Card>
+  <Card title="Agents" icon="robot">
+    Specialized AI agents for specific tasks like code exploration, architecture design, or PR review
+  </Card>
+  <Card title="Skills" icon="lightbulb">
+    Auto-activating expertise that Claude loads contextually, like frontend design or security guidance
+  </Card>
+  <Card title="Hooks" icon="webhook">
+    Event handlers that trigger on actions like file edits, commands, or session events
+  </Card>
+</CardGroup>
+
+## Why Use Plugins?
+
+**Consistency Across Projects**: Install once, use everywhere. Plugins work across all your projects.
+
+**Team Collaboration**: Share plugins with your team to standardize workflows and best practices.
+
+**Extensibility**: Customize Claude Code for your specific needs without modifying the core application.
+
+**MCP Integration**: Plugins can bundle MCP servers to connect external tools and services.
+
+## How Plugins Work
+
+Plugins follow a standardized directory structure:
+
+```
+plugin-name/
+├── .claude-plugin/
+│   └── plugin.json          # Plugin metadata
+├── commands/                # Slash commands (optional)
+├── agents/                  # Specialized agents (optional)
+├── skills/                  # Agent skills (optional)
+├── hooks/                   # Event handlers (optional)
+├── .mcp.json               # External tool configuration (optional)
+└── README.md               # Plugin documentation
+```
+
+All components are automatically discovered when the plugin is installed.
+
+## Bundled Plugins
+
+Claude Code includes several official plugins:
+
+<AccordionGroup>
+  <Accordion title="Development Tools">
+    - **agent-sdk-dev**: Create and verify Claude Agent SDK applications
+    - **plugin-dev**: Comprehensive toolkit for developing Claude Code plugins
+    - **feature-dev**: Structured 7-phase feature development workflow
+  </Accordion>
+  
+  <Accordion title="Code Quality">
+    - **code-review**: Automated PR review with confidence-based scoring
+    - **pr-review-toolkit**: Six specialized review agents for comprehensive analysis
+    - **hookify**: Create custom hooks from conversation patterns
+  </Accordion>
+  
+  <Accordion title="Workflow Automation">
+    - **commit-commands**: Git workflow automation (`/commit`, `/commit-push-pr`)
+    - **frontend-design**: Production-grade frontend interfaces that avoid generic AI aesthetics
+  </Accordion>
+</AccordionGroup>
+
+## Plugin Marketplace
+
+Discover and install plugins from community marketplaces:
+
+```bash
+/plugin install plugin-name@marketplace-name
+```
+
+Or configure plugins in your project's `.claude/settings.json`.
+
+## Quick Start
+
+<Steps>
+  <Step title="Install a Plugin">
+    Use the `/plugin` command in Claude Code:
+    ```bash
+    /plugin install code-review
+    ```
+  </Step>
+  
+  <Step title="Use Plugin Commands">
+    Installed commands appear as slash commands:
+    ```bash
+    /code-review
+    /commit
+    /feature-dev Add user authentication
+    ```
+  </Step>
+  
+  <Step title="Leverage Agents & Skills">
+    Agents and skills activate automatically based on your task:
+    ```
+    "Review my test coverage"
+    → Triggers pr-test-analyzer agent
+    
+    "Create a dashboard UI"
+    → Loads frontend-design skill
+    ```
+  </Step>
+</Steps>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/plugins/installation">
+    Learn how to install and configure plugins
+  </Card>
+  <Card title="Browse Plugins" icon="grid" href="/plugins/bundled/agent-sdk-dev">
+    Explore bundled plugins and their features
+  </Card>
+  <Card title="Create a Plugin" icon="code" href="/plugins/development/getting-started">
+    Build your own custom plugins
+  </Card>
+  <Card title="Marketplace" icon="store" href="/plugins/marketplace">
+    Discover community plugins
+  </Card>
+</CardGroup>
+
+## Learn More
+
+- [Plugin Development Guide](/plugins/development/getting-started)
+- [Plugin Structure Reference](/plugins/development/structure)
+- [Agent SDK Documentation](https://docs.claude.com/en/api/agent-sdk/overview)

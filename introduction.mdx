@@ -1,0 +1,175 @@
+---
+title: Introduction to Claude Code
+description: An agentic coding tool that lives in your terminal and helps you code faster through natural language commands
+---
+
+Claude Code is an agentic coding tool that lives in your terminal, understands your codebase, and helps you code faster by executing routine tasks, explaining complex code, and handling git workflows—all through natural language commands.
+
+Use it in your terminal, IDE, or tag @claude on GitHub.
+
+## What Can Claude Code Do?
+
+Claude Code transforms how you interact with your codebase by understanding context and executing complex workflows through simple natural language:
+
+<CardGroup cols={2}>
+  <Card title="Code Generation" icon="code" href="/quickstart">
+    Write, edit, and refactor code across multiple files with natural language instructions
+  </Card>
+  
+  <Card title="Git Workflows" icon="git-alt" href="/guides/git-workflows">
+    Commit, push, create PRs, and manage branches through conversational commands
+  </Card>
+  
+  <Card title="Codebase Understanding" icon="book" href="/concepts/codebase-understanding">
+    Ask questions about your code and get detailed explanations with file:line references
+  </Card>
+  
+  <Card title="Task Automation" icon="robot" href="/guides/task-automation">
+    Automate routine tasks with custom commands, agents, and hooks
+  </Card>
+</CardGroup>
+
+## Key Features
+
+### Natural Language Interface
+
+Interact with your codebase conversationally. Instead of memorizing commands, just describe what you want:
+
+```bash
+claude
+> Add user authentication with OAuth support
+> Fix the memory leak in the cache service
+> Refactor the API handlers to use async/await
+```
+
+### Deep Codebase Understanding
+
+Claude Code reads and comprehends your entire project, understanding:
+- Code patterns and conventions
+- Architecture and dependencies
+- Related files and cross-references
+- Historical context from git history
+
+### Specialized Agents
+
+Launch background agents for specific tasks:
+- **Code exploration**: Trace execution paths and analyze features
+- **Architecture design**: Design implementation approaches
+- **Code review**: Identify bugs and quality issues
+- **Custom agents**: Build your own specialized workflows
+
+### Plugin Ecosystem
+
+Extend functionality with plugins:
+- Custom slash commands
+- Domain-specific agents
+- Workflow automation hooks
+- MCP (Model Context Protocol) integrations
+
+## How It Works
+
+<Steps>
+  <Step title="Start Claude in your project">
+    Navigate to your project directory and run `claude`. Claude Code automatically understands your project structure.
+  </Step>
+  
+  <Step title="Describe what you want">
+    Use natural language to describe tasks, ask questions, or request changes. Claude understands context from your entire codebase.
+  </Step>
+  
+  <Step title="Review and approve">
+    Claude shows you exactly what it will do before making changes. You control what gets executed with granular permissions.
+  </Step>
+  
+  <Step title="Iterate and refine">
+    Continue the conversation to refine changes, fix issues, or explore new directions. Your conversation history provides context.
+  </Step>
+</Steps>
+
+## Getting Started
+
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/installation">
+    Install Claude Code on macOS, Linux, or Windows
+  </Card>
+  
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get started with your first commands in under 5 minutes
+  </Card>
+  
+  <Card title="Core Concepts" icon="lightbulb" href="/concepts/overview">
+    Understand how Claude Code works and what makes it powerful
+  </Card>
+  
+  <Card title="Configuration" icon="gear" href="/configuration/settings">
+    Customize Claude Code to match your workflow and security requirements
+  </Card>
+</CardGroup>
+
+## Use Cases
+
+### Feature Development
+
+Build new features with a structured workflow:
+1. Explore existing codebase patterns
+2. Ask clarifying questions about requirements
+3. Design architecture with multiple approaches
+4. Implement with continuous progress tracking
+5. Review for quality and correctness
+
+### Code Review
+
+Automate PR reviews with specialized agents:
+- Analyze code comments and documentation
+- Verify test coverage
+- Detect silent failures and error handling issues
+- Check type design and API contracts
+- Identify code simplification opportunities
+
+### Git Operations
+
+Streamline version control workflows:
+- Create commits with intelligent messages
+- Push changes and open PRs
+- Review PR status and comments
+- Manage branches and worktrees
+
+### Debugging
+
+Identify and fix issues faster:
+- Trace execution paths through complex code
+- Analyze error messages and logs
+- Find similar bugs in history
+- Suggest fixes based on codebase patterns
+
+## Why Claude Code?
+
+<Note>
+  Claude Code is built on Claude 4.6 (Opus and Sonnet), providing state-of-the-art code understanding and generation capabilities with extended thinking for complex tasks.
+</Note>
+
+**Contextual**: Understands your entire codebase, not just individual files
+
+**Safe**: Review and approve changes before they're executed. Granular permission system.
+
+**Extensible**: Plugin system for custom commands, agents, and workflows
+
+**Integrated**: Works in your terminal, IDE (VS Code), or directly on GitHub
+
+**Conversational**: Natural language interface—no need to memorize commands
+
+## Next Steps
+
+<CardGroup cols={3}>
+  <Card title="Install" icon="download" href="/installation">
+    Get Claude Code running on your machine
+  </Card>
+  
+  <Card title="Learn" icon="book" href="/concepts/overview">
+    Understand core concepts
+  </Card>
+  
+  <Card title="Build" icon="hammer" href="/quickstart">
+    Start coding with Claude
+  </Card>
+</CardGroup>

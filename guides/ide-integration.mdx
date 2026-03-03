@@ -1,0 +1,456 @@
+---
+title: IDE Integration
+description: Use Claude Code directly in Visual Studio Code with the official extension
+---
+
+Claude Code integrates seamlessly with Visual Studio Code through the official extension, bringing AI-powered coding assistance directly into your editor.
+
+## Installation
+
+### VS Code Extension
+
+1. Open VS Code
+2. Go to Extensions (Ctrl+Shift+X / Cmd+Shift+X)
+3. Search for "Claude Code"
+4. Click Install
+
+Or install via command line:
+```bash
+code --install-extension Anthropic.claude-code
+```
+
+### Prerequisites
+
+- **VS Code**: Version 1.85.0 or higher
+- **Claude Code CLI**: Must be installed globally
+- **Authentication**: Anthropic account with API access
+
+## Getting Started
+
+### First Launch
+
+1. Open a project folder in VS Code
+2. Open the Claude Code sidebar (click icon in activity bar)
+3. Authenticate with your Anthropic account
+4. Start chatting with Claude
+
+### Interface Overview
+
+**Sidebar Panel**: Main chat interface
+- Message input at bottom
+- Conversation history
+- File attachments
+- Model selection
+
+**Activity Bar Icon**: Quick access to Claude Code
+
+**Status Bar**: Shows session info and context usage
+
+## Core Features
+
+### Chat Interface
+
+**Send messages**: Type and press Enter (or Shift+Enter for multi-line)
+
+**File references**: Type `@` to mention files
+
+**Slash commands**: Type `/` for quick actions
+
+**Code blocks**: Hover for copy/insert actions
+
+### File Context
+
+Attach files to provide context:
+
+**Drag and drop**: Drag files from explorer to chat
+
+**@-mentions**: Type `@` and select files
+
+**Selection**: Highlight code and use "Ask Claude" from context menu
+
+### Code Actions
+
+**Inline suggestions**: Click code blocks to:
+- Copy to clipboard
+- Insert at cursor
+- Create new file
+- Show diff
+
+**Quick fixes**: Right-click code for:
+- Explain this code
+- Find bugs
+- Improve performance
+- Add tests
+- Refactor
+
+### Multi-file Editing
+
+Claude can edit multiple files simultaneously:
+
+```
+> Refactor the authentication system: move logic from
+  app.ts to a new AuthService class
+```
+
+Claude will:
+1. Show planned changes for each file
+2. Display diffs side-by-side
+3. Apply changes after approval
+
+## Extension Settings
+
+Configure via Settings (Ctrl+, / Cmd+,) and search "Claude Code":
+
+### General Settings
+
+```json
+{
+  // Model selection
+  "claudeCode.model": "claude-sonnet-4.6",
+  
+  // Enable/disable features
+  "claudeCode.enableInlineChat": true,
+  "claudeCode.enableCodeActions": true,
+  
+  // Context window management
+  "claudeCode.autoCompact": true,
+  "claudeCode.compactThreshold": 0.8,
+  
+  // Session management
+  "claudeCode.autoSaveSessions": true,
+  "claudeCode.sessionHistoryLimit": 50
+}
+```
+
+### Python Environment
+
+```json
+{
+  // Auto-activate Python virtual environments
+  "claudeCode.usePythonEnvironment": true,
+  
+  // Python interpreter path (auto-detected if not set)
+  "claudeCode.pythonPath": "/path/to/python"
+}
+```
+
+### Performance
+
+```json
+{
+  // Process wrapper for debugging
+  "claudeCode.claudeProcessWrapper": "",
+  
+  // Disable features for better performance
+  "claudeCode.disableBackgroundTasks": false,
+  "claudeCode.disableMCPTools": false
+}
+```
+
+## Keyboard Shortcuts
+
+Default shortcuts (customizable):
+
+| Action | Windows/Linux | macOS |
+|--------|--------------|-------|
+| Open Claude Code | `Ctrl+Shift+C` | `Cmd+Shift+C` |
+| New conversation | `Ctrl+Shift+N` | `Cmd+Shift+N` |
+| Focus input | `Ctrl+L` | `Cmd+L` |
+| Insert code | `Ctrl+Enter` | `Cmd+Enter` |
+| Explain selection | `Ctrl+Shift+E` | `Cmd+Shift+E` |
+| Find bugs | `Ctrl+Shift+B` | `Cmd+Shift+B` |
+
+### Customize Shortcuts
+
+1. Open Keyboard Shortcuts (Ctrl+K Ctrl+S)
+2. Search "Claude Code"
+3. Click pencil icon to edit
+4. Press new key combination
+
+## Workflows
+
+### Code Explanation
+
+1. Select code in editor
+2. Right-click → "Ask Claude" → "Explain this code"
+3. Read explanation in sidebar
+
+### Bug Fixing
+
+1. Select problematic code
+2. Right-click → "Ask Claude" → "Find bugs"
+3. Review suggested fixes
+4. Click "Apply" to insert fix
+
+### Refactoring
+
+1. Select code to refactor
+2. Type in chat: "Refactor this to use async/await"
+3. Review diff
+4. Accept or request changes
+
+### Test Generation
+
+1. Select function to test
+2. Ask: "Write unit tests for this function"
+3. Review generated tests
+4. Insert into test file
+
+### Multi-file Feature Development
+
+1. Open chat
+2. Describe feature: "Add user authentication with JWT"
+3. Review Claude's plan
+4. Approve implementation
+5. Review diffs for all files
+6. Apply changes
+
+## Session Management
+
+### Viewing Sessions
+
+Click "Sessions" button in sidebar to:
+- View conversation history
+- Resume previous sessions
+- Search sessions by content
+- Filter by date or branch
+
+### Resume Session
+
+1. Open sessions panel
+2. Search or browse sessions
+3. Click to resume
+4. Continue conversation
+
+### Session Forking
+
+Explore alternative approaches:
+
+1. Open session
+2. Click message where you want to branch
+3. Click "Fork from here"
+4. New session starts from that point
+
+### Remote Sessions
+
+For OAuth users:
+
+- Browse sessions from claude.ai
+- Resume sessions from other devices
+- Sync across VS Code instances
+
+## Plan Mode
+
+Review Claude's plan before implementation:
+
+1. Ask Claude to implement a feature
+2. Claude shows implementation plan
+3. Review plan in sidebar
+4. Comment on specific steps
+5. Approve or request changes
+6. Claude implements approved plan
+
+**Plan features**:
+- Step-by-step breakdown
+- File changes preview
+- Inline comments
+- Accept/reject workflow
+
+## Usage Tracking
+
+View usage in sidebar:
+
+**Current session**:
+- Tokens used
+- Tool calls
+- Duration
+
+**Plan usage**:
+- Monthly usage
+- Remaining quota
+- Usage by project
+
+Use `/usage` command for details.
+
+## Plugin Support
+
+VS Code extension supports Claude Code plugins:
+
+### Installing Plugins
+
+1. Open command palette (Ctrl+Shift+P)
+2. Run "Claude Code: Manage Plugins"
+3. Browse and install plugins
+
+### Plugin Marketplace
+
+Browse plugins directly in VS Code:
+- Search by name or category
+- View install counts
+- Read descriptions
+- See trust warnings
+- Install with one click
+
+### Local Plugins
+
+Project-specific plugins in `.claude/` are automatically loaded.
+
+## Advanced Features
+
+### Background Agents
+
+Run agents while you work:
+
+```
+> Launch code-reviewer in the background to analyze the entire codebase
+```
+
+View progress in status bar and tasks panel.
+
+### MCP Tools
+
+MCP servers configured in `.claude/.mcp.json` are available:
+
+```
+> List GitHub issues assigned to me
+> Query the production database for recent errors
+```
+
+### Custom Commands
+
+Project commands in `.claude/commands/` appear in command palette:
+
+1. Press Ctrl+Shift+P
+2. Type command name
+3. Execute
+
+### Git Integration
+
+Git operations work seamlessly:
+
+```
+> /commit
+> /commit-push-pr
+> Show me what changed
+```
+
+PR status shown in status bar.
+
+## Troubleshooting
+
+### Extension Not Starting
+
+**Issue**: Claude Code sidebar is empty or shows error
+
+**Solutions**:
+- Ensure Claude Code CLI is installed: `claude --version`
+- Check authentication: `claude auth status`
+- Restart VS Code
+- Check extension logs: Developer → Show Logs → Extension Host
+
+### File References Not Working
+
+**Issue**: @-mentions don't autocomplete
+
+**Solutions**:
+- Ensure folder is opened in VS Code (not just files)
+- Check file search is enabled in workspace settings
+- Reload window: Ctrl+Shift+P → "Reload Window"
+
+### High CPU Usage
+
+**Issue**: VS Code uses excessive CPU
+
+**Solutions**:
+- Disable background tasks: `claudeCode.disableBackgroundTasks: true`
+- Use simple mode: Set `CLAUDE_CODE_SIMPLE=true` in environment
+- Reduce MCP servers
+- Compact conversation: `/compact`
+
+### Sessions Not Syncing
+
+**Issue**: Remote sessions don't appear
+
+**Solutions**:
+- Verify OAuth authentication
+- Check internet connection
+- Refresh sessions panel
+- Re-authenticate: `claude auth login`
+
+### Keyboard Shortcuts Conflict
+
+**Issue**: Shortcuts don't work or trigger wrong actions
+
+**Solutions**:
+- Check for conflicts in Keyboard Shortcuts editor
+- Customize bindings
+- Disable conflicting extensions
+
+## Best Practices
+
+<Tip>
+  **Use @-mentions**: Provide specific file context for better results
+</Tip>
+
+<Tip>
+  **Review diffs carefully**: Always check proposed changes before applying
+</Tip>
+
+<Tip>
+  **Leverage plan mode**: For complex features, review plans before implementation
+</Tip>
+
+<Tip>
+  **Save sessions**: Name important sessions for easy resumption
+</Tip>
+
+<Tip>
+  **Use background agents**: Run long analysis tasks in background
+</Tip>
+
+## Comparison: VS Code vs Terminal
+
+| Feature | VS Code Extension | Terminal |
+|---------|------------------|----------|
+| Code actions | ✓ Quick fixes, inline suggestions | ✗ |
+| File navigation | ✓ Integrated file explorer | Manual paths |
+| Diff view | ✓ Side-by-side diffs | Text diffs |
+| Plan mode | ✓ Visual plan review | Text-based |
+| Session UI | ✓ Graphical history | Command-line resume |
+| Git integration | ✓ PR status in UI | Status in prompt |
+| Multi-file edits | ✓ Visual diff | Text diff |
+| Plugins | ✓ Visual marketplace | CLI commands |
+| Performance | Slightly slower | Faster |
+| Flexibility | IDE-bound | Works anywhere |
+
+**Use VS Code when**:
+- Working on complex features
+- Need visual diffs
+- Want integrated experience
+- Use code actions frequently
+
+**Use Terminal when**:
+- Quick tasks
+- Remote servers
+- CI/CD integration
+- Maximum performance
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Learn basic commands and workflows
+  </Card>
+  
+  <Card title="Git Workflows" icon="git-alt" href="/guides/git-workflows">
+    Master git operations
+  </Card>
+  
+  <Card title="Task Automation" icon="robot" href="/guides/task-automation">
+    Create custom commands and agents
+  </Card>
+  
+  <Card title="Settings" icon="gear" href="/configuration/settings">
+    Customize extension settings
+  </Card>
+</CardGroup>

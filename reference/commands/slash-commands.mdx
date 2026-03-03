@@ -1,0 +1,570 @@
+---
+title: Slash Commands
+description: Create custom slash commands to automate workflows and provide context to Claude
+---
+
+Slash commands are custom commands you define in `.claude/commands/` that extend Claude Code's capabilities with project-specific workflows.
+
+## Creating Commands
+
+### Basic Structure
+
+Create a markdown file in `.claude/commands/`:
+
+```bash
+.claude/
+└── commands/
+    ├── analyze.md
+    ├── deploy.md
+    └── review-pr.md
+```
+
+### Command Format
+
+Each command is a markdown file with YAML frontmatter:
+
+```markdown
+---
+description: Analyze code complexity and suggest improvements
+allowed-tools: Read, Grep, Bash(npx:*)
+---
+
+Analyze the codebase for:
+- Cyclomatic complexity
+- Code duplication
+- Design patterns
+- Performance bottlenecks
+
+Focus on: $ARGUMENTS
+```
+
+## Frontmatter Fields
+
+<ParamField path="description" type="string" required>
+  Brief description shown in command autocomplete and help menu.
+</ParamField>
+
+<ParamField path="allowed-tools" type="string | string[]">
+  Tools Claude can use during command execution. See [Tool Permissions](#tool-permissions) below.
+</ParamField>
+
+<ParamField path="argument-hint" type="string">
+  Hint text shown in autocomplete for command arguments.
+  
+  Example: `"[file|directory]"` or `"<issue-number>"`
+</ParamField>
+
+## Real-World Examples
+
+### Example 1: GitHub Issue Triage
+
+From the Claude Code repository:
+
+```markdown .claude/commands/triage-issue.md
+---
+allowed-tools: Bash(./scripts/gh.sh:*),Bash(./scripts/edit-issue-labels.sh:*)
+description: Triage GitHub issues by analyzing and applying labels
+---
+
+You're an issue triage assistant. Analyze the issue and manage labels.
+
+IMPORTANT: Don't post any comments or messages to the issue. 
+Your only actions are adding or removing labels.
+
+Context:
+$ARGUMENTS
+
+TOOLS:
+- `./scripts/gh.sh label list` — fetch all available labels
+- `./scripts/gh.sh issue view 123` — read issue details
+- `./scripts/gh.sh issue view 123 --comments` — read conversation
+- `./scripts/gh.sh search issues "query"` — find similar issues
+- `./scripts/edit-issue-labels.sh --issue NUMBER --add-label LABEL`
+
+TASK:
+1. Run `./scripts/gh.sh label list` to fetch available labels
+2. Run `./scripts/gh.sh issue view ISSUE_NUMBER` to read issue
+3. Analyze and apply appropriate category labels
+4. Check for duplicates before marking as duplicate
+5. Apply lifecycle labels only when clearly warranted
+```
+
+**Usage:**
+```bash
+/triage-issue 1234
+/triage-issue https://github.com/owner/repo/issues/456
+```
+
+### Example 2: Commit, Push, and PR
+
+From the Claude Code repository:
+
+```markdown .claude/commands/commit-push-pr.md
+---
+allowed-tools: Bash(git checkout --branch:*), Bash(git add:*), Bash(git status:*), Bash(git push:*), Bash(git commit:*), Bash(gh pr create:*)
+description: Commit, push, and open a PR
+---
+
+## Context
+
+- Current git status: !\`git status\`
+- Current git diff (staged and unstaged changes): !\`git diff HEAD\`
+- Current branch: !\`git branch --show-current\`
+
+## Your task
+
+Based on the above changes:
+1. Create a new branch if on main
+2. Create a single commit with an appropriate message
+3. Push the branch to origin
+4. Create a pull request using `gh pr create`
+5. You have the capability to call multiple tools in a single response. 
+   You MUST do all of the above in a single message.
+```
+
+**Usage:**
+```bash
+/commit-push-pr
+```
+
+<Tip>
+Notice the use of `!\`...\`` for inline command execution to gather context.
+</Tip>
+
+### Example 3: Find Duplicates
+
+From the Claude Code repository:
+
+```markdown .claude/commands/dedupe.md
+---
+allowed-tools: Bash(./scripts/gh.sh:*), Bash(./scripts/comment-on-duplicates.sh:*)
+description: Find duplicate GitHub issues
+---
+
+Find up to 3 likely duplicate issues for a given GitHub issue.
+
+To do this, follow these steps precisely:
+
+1. Use an agent to check if the Github issue (a) is closed, 
+   (b) does not need to be deduped, or (c) already has a 
+   duplicates comment. If so, do not proceed.
+2. Use an agent to view a Github issue and return a summary
+3. Launch 5 parallel agents to search Github for duplicates using 
+   diverse keywords and search approaches
+4. Feed the results into another agent to filter out false positives
+5. Finally, use the comment script to post duplicates:
+   ```bash
+   ./scripts/comment-on-duplicates.sh --base-issue ISSUE_NUMBER \
+     --potential-duplicates DUP1 DUP2 DUP3
+   ```
+
+Notes:
+- Use `./scripts/gh.sh` to interact with Github
+- Do not use other tools beyond the allowed scripts
+- Make a todo list first
+```
+
+**Usage:**
+```bash
+/dedupe 1234
+```
+
+## Tool Permissions
+
+The `allowed-tools` field controls which tools Claude can use:
+
+### Specific Command Patterns
+
+```yaml
+# Only specific git commands
+allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*)
+
+# Only npm commands  
+allowed-tools: Bash(npm:*)
+
+# Only specific script
+allowed-tools: Bash(./scripts/deploy.sh:*)
+
+# Multiple specific scripts
+allowed-tools: Bash(./scripts/gh.sh:*), Bash(./scripts/edit-labels.sh:*)
+```
+
+### Tool Types
+
+```yaml
+# File operations
+allowed-tools: Read, Write, Edit, MultiEdit
+
+# Search operations
+allowed-tools: Grep, Glob, FileSearch
+
+# Web access
+allowed-tools: WebFetch, WebSearch
+
+# Combined
+allowed-tools: Read, Write, Bash(git:*)
+```
+
+### Unrestricted Access
+
+```yaml
+# Allow all bash commands (requires user approval)
+allowed-tools: Bash
+
+# Allow all tools (not recommended)
+# Omit allowed-tools field entirely
+```
+
+<Warning>
+Commands without `allowed-tools` or with `Bash` will prompt users for approval before execution.
+</Warning>
+
+## Using Arguments
+
+### All Arguments
+
+Access all arguments with `$ARGUMENTS`:
+
+```markdown
+---
+description: Deploy to environment
+---
+
+Deploy the application to: $ARGUMENTS
+
+Steps:
+1. Build the application
+2. Run tests
+3. Deploy to specified environment
+```
+
+```bash
+/deploy production
+# Claude receives: "Deploy the application to: production"
+```
+
+### Indexed Arguments
+
+Access specific arguments with `$ARGUMENTS[0]`, `$ARGUMENTS[1]`, etc:
+
+```markdown
+---
+description: Compare two branches
+---
+
+Compare branch $ARGUMENTS[0] with $ARGUMENTS[1]
+
+Analyze:
+- Commit differences
+- File changes
+- Potential conflicts
+```
+
+```bash
+/compare-branches main feature/new-ui
+# Claude receives: "Compare branch main with feature/new-ui"
+```
+
+### Argument Hints
+
+Provide hints for better UX:
+
+```markdown
+---
+description: Review pull request
+argument-hint: "<pr-number> or <pr-url>"
+---
+
+Review pull request: $ARGUMENTS
+```
+
+The hint appears in autocomplete:
+```
+/review-pr <pr-number> or <pr-url>
+          ↑ hint shown here
+```
+
+## Inline Command Execution
+
+Execute commands inline to gather context:
+
+```markdown
+---
+description: Review current changes
+allowed-tools: Bash(git:*), Read
+---
+
+## Current State
+
+Branch: !\`git branch --show-current\`
+
+Modified files:
+!\`git diff --name-only\`
+
+Diff:
+!\`git diff\`
+
+## Task
+
+Review the above changes for:
+- Code quality
+- Best practices
+- Potential bugs
+```
+
+<Note>
+Inline commands execute when the command loads, before Claude responds. Use them for gathering context, not for making changes.
+</Note>
+
+## Session Variables
+
+### Session ID
+
+Access the current session ID:
+
+```markdown
+---
+description: Create session log
+---
+
+Create a log file for session: ${CLAUDE_SESSION_ID}
+
+Log location: logs/session-${CLAUDE_SESSION_ID}.md
+```
+
+## Command Scope
+
+Commands can be defined at different levels:
+
+### Project Commands
+
+```bash
+project-root/
+└── .claude/
+    └── commands/
+        └── deploy.md
+```
+
+Available when working in this project.
+
+### User Commands
+
+```bash
+~/.claude/
+└── commands/
+    └── global-task.md
+```
+
+Available in all projects.
+
+### Plugin Commands
+
+```bash
+plugins/my-plugin/
+└── commands/
+    └── plugin-command.md
+```
+
+Available when plugin is installed.
+
+### Additional Directories
+
+```bash
+claude --add-dir ~/shared-commands
+```
+
+Commands from additional directories are loaded automatically.
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use specific tool permissions">
+    Instead of:
+    ```yaml
+    allowed-tools: Bash
+    ```
+    
+    Use:
+    ```yaml
+    allowed-tools: Bash(git:*), Bash(npm test:*)
+    ```
+    
+    This provides better security and clarity.
+  </Accordion>
+
+  <Accordion title="Provide clear instructions">
+    Be explicit about what Claude should do:
+    
+    ```markdown
+    ## Task
+    
+    1. First, analyze the codebase structure
+    2. Then, identify test files
+    3. Finally, run tests and report results
+    
+    Do NOT modify any files without asking first.
+    ```
+  </Accordion>
+
+  <Accordion title="Use inline commands for context">
+    Gather necessary context upfront:
+    
+    ```markdown
+    ## Current State
+    
+    Dependencies: !\`cat package.json | jq .dependencies\`
+    Node version: !\`node --version\`
+    
+    ## Task
+    
+    Update dependencies...
+    ```
+  </Accordion>
+
+  <Accordion title="Document expected behavior">
+    Add comments explaining the command:
+    
+    ```markdown
+    ---
+    description: Deploy to production
+    # This command requires:
+    # - ./scripts/deploy.sh to exist
+    # - Valid AWS credentials
+    # - Production environment configured
+    allowed-tools: Bash(./scripts/deploy.sh:*)
+    ---
+    ```
+  </Accordion>
+
+  <Accordion title="Test with different arguments">
+    Test your commands with:
+    - No arguments
+    - Single argument
+    - Multiple arguments
+    - Edge cases (special characters, paths with spaces)
+  </Accordion>
+
+  <Accordion title="Use descriptive file names">
+    Command file names become the command name:
+    
+    ✅ Good: `review-pr.md` → `/review-pr`
+    
+    ❌ Bad: `rpr.md` → `/rpr`
+  </Accordion>
+</AccordionGroup>
+
+## Advanced Patterns
+
+### Multi-Agent Workflows
+
+Commands can launch agents for complex tasks:
+
+```markdown
+---
+description: Comprehensive code review
+allowed-tools: Bash(gh:*), Read, Grep
+---
+
+Perform a comprehensive review by launching specialized agents:
+
+1. Use the `code-reviewer` agent to analyze code quality
+2. Use the `test-analyzer` agent to review test coverage
+3. Use the `security-scanner` agent to check for vulnerabilities
+4. Aggregate results and provide summary
+
+PR: $ARGUMENTS
+```
+
+### Conditional Logic
+
+Provide instructions for different scenarios:
+
+```markdown
+---
+description: Smart deployment
+---
+
+Deploy to: $ARGUMENTS
+
+If deploying to production:
+- Run full test suite
+- Require manual approval
+- Create git tag
+- Notify team
+
+If deploying to staging:
+- Run smoke tests only
+- Auto-deploy on success
+```
+
+### Integration with External Tools
+
+```markdown
+---
+description: Create Jira ticket from issue
+allowed-tools: Bash(./scripts/jira-cli.sh:*), Bash(./scripts/gh.sh:*)
+---
+
+GitHub Issue: $ARGUMENTS
+
+1. Fetch issue details: `./scripts/gh.sh issue view $ARGUMENTS[0]`
+2. Extract title, description, labels
+3. Create Jira ticket: `./scripts/jira-cli.sh create`
+4. Link GitHub issue to Jira ticket
+5. Post comment on GitHub with Jira link
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Command not appearing in autocomplete">
+    Check:
+    - File is in `.claude/commands/` directory
+    - File has `.md` extension
+    - Frontmatter is valid YAML
+    - Description field is present
+    
+    Try restarting Claude Code after creating new commands.
+  </Accordion>
+
+  <Accordion title="Permission denied errors">
+    Ensure `allowed-tools` includes the necessary tools:
+    
+    ```yaml
+    # If using git commands
+    allowed-tools: Bash(git:*)
+    
+    # If using custom scripts
+    allowed-tools: Bash(./scripts/my-script.sh:*)
+    ```
+  </Accordion>
+
+  <Accordion title="Inline commands not executing">
+    Check:
+    - Syntax is correct: \`\`!\`command\`\`\`
+    - Command is in `allowed-tools`
+    - Command exists and is executable
+    
+    Inline commands run when the command loads, not during execution.
+  </Accordion>
+
+  <Accordion title="Arguments not working">
+    Use correct syntax:
+    - All arguments: `$ARGUMENTS`
+    - First argument: `$ARGUMENTS[0]`
+    - Second argument: `$ARGUMENTS[1]`
+    
+    Not: `$0`, `$1`, `$ARGS`, etc.
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Hook Development" icon="webhook" href="/reference/hooks/overview">
+    Learn how to create hooks for lifecycle events
+  </Card>
+  <Card title="Plugin Development" icon="puzzle-piece" href="/plugins/development/getting-started">
+    Create plugins with commands, agents, and more
+  </Card>
+</CardGroup>

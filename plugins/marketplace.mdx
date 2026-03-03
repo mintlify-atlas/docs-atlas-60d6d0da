@@ -1,0 +1,331 @@
+---
+title: Plugin Marketplace
+description: Discover and share Claude Code plugins through community marketplaces
+---
+
+The Claude Code plugin marketplace allows you to discover, install, and share plugins with the community.
+
+## What Is a Marketplace?
+
+A marketplace is a collection of plugins that can be:
+- **Public**: Available to anyone
+- **Private**: Shared within your organization
+- **Personal**: Your own plugin collection
+
+Marketplaces can be hosted on GitHub, npm, or any accessible location.
+
+## Official Marketplace
+
+Claude Code includes an official marketplace with verified plugins:
+
+```bash
+/plugin install plugin-name@claude-code-marketplace
+```
+
+Official marketplace plugins are:
+- Maintained by Anthropic or trusted contributors
+- Regularly tested and updated
+- Documented with examples
+- Reviewed for security and quality
+
+## Installing from Marketplaces
+
+### Default Marketplace
+
+Install from the default marketplace:
+
+```bash
+/plugin install code-review
+```
+
+### Specific Marketplace
+
+Install from a named marketplace:
+
+```bash
+/plugin install awesome-plugin@company-marketplace
+```
+
+### GitHub Marketplace
+
+Install directly from GitHub:
+
+```bash
+/plugin install username/plugin-repo@github
+```
+
+### npm Marketplace
+
+Install from npm:
+
+```bash
+/plugin install @scope/plugin-name@npm
+```
+
+## Configuring Marketplaces
+
+Add custom marketplaces in your `.claude/settings.json`:
+
+```json
+{
+  "marketplaces": [
+    {
+      "name": "company-marketplace",
+      "url": "https://plugins.company.com/marketplace.json",
+      "type": "json"
+    },
+    {
+      "name": "github-org",
+      "url": "https://github.com/org-name/plugins",
+      "type": "github"
+    }
+  ]
+}
+```
+
+## Marketplace Format
+
+Marketplaces use a JSON format to describe available plugins:
+
+```json
+{
+  "name": "My Marketplace",
+  "version": "1.0.0",
+  "plugins": [
+    {
+      "name": "awesome-plugin",
+      "version": "1.2.0",
+      "description": "An awesome plugin for Claude Code",
+      "author": {
+        "name": "Author Name",
+        "email": "author@example.com"
+      },
+      "repository": "https://github.com/user/awesome-plugin",
+      "keywords": ["automation", "testing"],
+      "installUrl": "https://github.com/user/awesome-plugin/archive/v1.2.0.tar.gz"
+    }
+  ]
+}
+```
+
+## Publishing to Marketplaces
+
+### Prepare Your Plugin
+
+<Steps>
+  <Step title="Complete Plugin Metadata">
+    Ensure your `.claude-plugin/plugin.json` is complete:
+    ```json
+    {
+      "name": "my-plugin",
+      "version": "1.0.0",
+      "description": "Brief description",
+      "author": {
+        "name": "Your Name",
+        "email": "you@example.com"
+      },
+      "repository": "https://github.com/you/my-plugin",
+      "license": "MIT",
+      "keywords": ["keyword1", "keyword2"]
+    }
+    ```
+  </Step>
+  
+  <Step title="Write Documentation">
+    Create a comprehensive README.md:
+    - Overview and features
+    - Installation instructions
+    - Usage examples
+    - Configuration options
+    - Troubleshooting guide
+  </Step>
+  
+  <Step title="Test Thoroughly">
+    Test your plugin:
+    - On multiple operating systems
+    - With different Claude Code versions
+    - With various project types
+  </Step>
+  
+  <Step title="Version and Tag">
+    Use semantic versioning:
+    ```bash
+    git tag v1.0.0
+    git push --tags
+    ```
+  </Step>
+</Steps>
+
+### Submit to Official Marketplace
+
+To submit to the official Claude Code marketplace:
+
+1. **Create a pull request** to the marketplace repository
+2. **Include plugin metadata** in the PR description
+3. **Pass review requirements**:
+   - Security review
+   - Code quality standards
+   - Documentation completeness
+   - Test coverage
+
+### Create Your Own Marketplace
+
+Host your own marketplace:
+
+<CodeGroup>
+```json marketplace.json
+{
+  "name": "Company Internal Marketplace",
+  "version": "1.0.0",
+  "description": "Internal plugins for our team",
+  "plugins": [
+    {
+      "name": "deploy-tools",
+      "version": "2.1.0",
+      "description": "Deployment automation tools",
+      "installUrl": "https://internal.company.com/plugins/deploy-tools-2.1.0.tar.gz"
+    }
+  ]
+}
+```
+
+```bash Host the marketplace
+# Serve the marketplace.json file
+# Users configure in .claude/settings.json:
+{
+  "marketplaces": [
+    {
+      "name": "company",
+      "url": "https://internal.company.com/marketplace.json"
+    }
+  ]
+}
+```
+</CodeGroup>
+
+## Discovering Plugins
+
+### Browse Marketplaces
+
+View all plugins in a marketplace:
+
+```bash
+/plugin browse company-marketplace
+```
+
+### Search Plugins
+
+Search across all configured marketplaces:
+
+```bash
+/plugin search testing
+```
+
+Search in a specific marketplace:
+
+```bash
+/plugin search testing --marketplace=company
+```
+
+### Filter by Category
+
+Plugins can be tagged with keywords:
+
+```bash
+/plugin search --tag=automation
+/plugin search --tag=code-quality
+```
+
+## Plugin Quality
+
+### Verification Badges
+
+Official marketplace plugins may have badges:
+
+- **Verified**: Reviewed and approved by Anthropic
+- **Popular**: High install count and ratings
+- **Maintained**: Actively updated and supported
+- **Security Reviewed**: Passed security audit
+
+### Community Ratings
+
+Some marketplaces support ratings and reviews:
+
+```bash
+/plugin rate code-review 5 --review="Excellent PR automation"
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Check Reputation" icon="shield-check">
+    Review plugin ratings, download counts, and recent updates before installing
+  </Card>
+  <Card title="Read Documentation" icon="book">
+    Always read the README and understand what a plugin does
+  </Card>
+  <Card title="Test Safely" icon="flask">
+    Test new plugins in a non-production environment first
+  </Card>
+  <Card title="Keep Updated" icon="sync">
+    Regularly update installed plugins for security patches
+  </Card>
+</CardGroup>
+
+## Security Considerations
+
+<Warning>
+  Plugins have access to your codebase and can execute commands. Only install plugins from trusted sources.
+</Warning>
+
+### Before Installing
+
+- Review the plugin's source code if available
+- Check the author's reputation
+- Look for security reviews or audits
+- Verify the plugin uses `${CLAUDE_PLUGIN_ROOT}` for paths (portable)
+- Check that hooks validate inputs properly
+
+### Red Flags
+
+- Requests excessive permissions
+- Unclear or missing documentation
+- No version control or git history
+- Hardcoded credentials or API keys
+- Suspicious network requests
+
+## Marketplace Administration
+
+### Managing Your Marketplace
+
+If you host a marketplace:
+
+1. **Regular reviews**: Check submitted plugins for quality
+2. **Security audits**: Review code for security issues
+3. **Version tracking**: Keep plugin versions up to date
+4. **Deprecation policy**: Clear process for removing outdated plugins
+
+### Marketplace API
+
+Advanced marketplaces can provide an API:
+
+```
+GET /api/plugins - List all plugins
+GET /api/plugins/:name - Get plugin details
+GET /api/search?q=term - Search plugins
+POST /api/rate - Submit rating
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Browse Bundled Plugins" icon="grid" href="/plugins/bundled/agent-sdk-dev">
+    Explore official plugins included with Claude Code
+  </Card>
+  <Card title="Create a Plugin" icon="code" href="/plugins/development/getting-started">
+    Build and publish your own plugins
+  </Card>
+  <Card title="Plugin Structure" icon="folder-tree" href="/plugins/development/structure">
+    Learn the plugin directory structure
+  </Card>
+</CardGroup>

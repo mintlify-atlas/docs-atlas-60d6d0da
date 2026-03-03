@@ -1,0 +1,606 @@
+---
+title: Built-in Commands
+description: Complete reference for all built-in slash commands in Claude Code
+---
+
+Claude Code includes a comprehensive set of built-in commands for managing your session, configuration, and workflow.
+
+## Session Management
+
+### /clear
+
+Clear the current conversation and start fresh.
+
+```bash
+/clear
+```
+
+<Note>
+This resets the conversation history but preserves your configuration and settings. Cached skills are also reset.
+</Note>
+
+### /resume
+
+Resume a previous conversation.
+
+```bash
+# Show interactive session picker
+/resume
+
+# Resume specific session by ID
+/resume abc123
+
+# Resume by custom title
+/resume "My Feature Work"
+
+# Resume from specific PR
+/resume --from-pr 123
+/resume --from-pr https://github.com/owner/repo/pull/456
+```
+
+<ParamField path="--from-pr" type="number | string">
+  Resume the session linked to a specific GitHub PR number or URL
+</ParamField>
+
+<Tip>
+Sessions are automatically linked to PRs when created via `gh pr create`.
+</Tip>
+
+### /fork
+
+Create a new conversation branch from the current point.
+
+```bash
+/fork
+```
+
+This creates a copy of the conversation up to the current point, allowing you to explore different approaches without affecting the original session.
+
+### /rename
+
+Rename the current session.
+
+```bash
+# Auto-generate name from context
+/rename
+
+# Set custom name
+/rename "Feature: User Authentication"
+```
+
+<Note>
+By default, `/rename` updates the terminal tab title. Custom titles persist across session resume.
+</Note>
+
+## Configuration
+
+### /config
+
+Open the interactive configuration menu.
+
+```bash
+/config
+```
+
+**Features:**
+- Search settings with real-time filtering (type to search)
+- Toggle boolean settings
+- Edit values inline
+- See current values and defaults
+- Access documentation links
+
+### /model
+
+Change the active AI model.
+
+```bash
+/model
+```
+
+Shows available models with:
+- Human-readable labels (e.g., "Sonnet 4.5")
+- Current selection indicator
+- Upgrade hints for newer versions
+- Pricing information (Anthropic API users only)
+- Support for extended thinking and effort levels
+
+**Available Models:**
+- Claude Sonnet 4.6 (latest)
+- Claude Opus 4.6
+- Claude Sonnet 4.5
+- Claude Haiku 4
+
+<Warning>
+Model availability depends on your plan and API provider (Anthropic, Bedrock, Vertex, or Foundry).
+</Warning>
+
+### /theme
+
+Change the terminal color theme.
+
+```bash
+/theme
+```
+
+Choose from available themes:
+- Light themes
+- Dark themes  
+- High contrast themes
+
+### /keybindings
+
+Configure custom keyboard shortcuts.
+
+```bash
+/keybindings
+```
+
+Create custom keybindings with:
+- Context-specific actions
+- Chord sequences (e.g., Ctrl+K Ctrl+S)
+- Per-context configuration
+- Standard and custom actions
+
+Learn more at [Keybindings Documentation](https://code.claude.com/docs/en/keybindings).
+
+## Context & Memory
+
+### /memory
+
+Manage auto-memory for the current session.
+
+```bash
+/memory
+```
+
+Claude automatically saves useful context to memory. Use this command to:
+- View saved memories
+- Edit or remove entries
+- Search memory contents
+- Configure memory scope (user/project/local)
+
+<Tip>
+Auto-memory is shared across git worktrees of the same repository.
+</Tip>
+
+### /compact
+
+Manually trigger conversation compaction.
+
+```bash
+/compact
+```
+
+Compaction reduces token usage by summarizing earlier parts of the conversation while preserving important context.
+
+**When compaction happens:**
+- Automatically at ~65% context usage (configurable)
+- Manually via `/compact`
+- Before blocking at ~98% context
+
+### /context
+
+Display current context window usage.
+
+```bash
+/context
+```
+
+**Shows:**
+- Total tokens used
+- Percentage of context window
+- Tokens remaining
+- Breakdown by category (messages, tools, skills)
+- Warning when approaching limit
+
+## Development Tools
+
+### /commit
+
+Create a git commit with AI-generated message.
+
+```bash
+/commit
+```
+
+**Process:**
+1. Analyzes `git status` and `git diff`
+2. Reviews recent commit messages for style
+3. Drafts appropriate commit message
+4. Stages relevant files
+5. Creates commit
+
+<Warning>
+Does not commit files that likely contain secrets (.env, credentials.json, etc.).
+</Warning>
+
+### /sandbox
+
+Configure bash command sandboxing.
+
+```bash
+/sandbox
+```
+
+Manage bash sandbox settings:
+- Enable/disable sandboxing
+- Configure network restrictions
+- Set excluded commands
+- View dependency status
+
+**Sandbox features:**
+- Network isolation
+- Filesystem restrictions  
+- Process isolation
+- Unix socket controls
+
+Learn more at [Sandbox Documentation](https://code.claude.com/docs/en/sandbox).
+
+### /mcp
+
+Manage Model Context Protocol (MCP) servers.
+
+```bash
+# List all MCP servers
+/mcp list
+
+# Get server details
+/mcp get <server-name>
+
+# Add new server
+/mcp add <server-name>
+
+# Enable/disable server
+/mcp enable <server-name>
+/mcp disable <server-name>
+
+# Reconnect server
+/mcp reconnect <server-name>
+```
+
+<Note>
+Claude Code supports stdio, HTTP, and SSE transport types for MCP servers.
+</Note>
+
+## Plugins
+
+### /plugin
+
+Manage Claude Code plugins.
+
+```bash
+# Browse marketplace
+/plugin browse
+
+# Install plugin
+/plugin install <name>
+
+# Enable/disable plugin
+/plugin enable <name>
+/plugin disable <name>
+
+# List installed plugins
+/plugin list
+
+# Remove plugin
+/plugin remove <name>
+
+# Validate plugin
+/plugin validate <path>
+```
+
+<ParamField path="--scope" type="user | project">
+  Install plugin at user or project level. Auto-detected if not specified.
+</ParamField>
+
+### /skills
+
+View and manage available skills.
+
+```bash
+/skills
+```
+
+Shows:
+- Built-in skills
+- Plugin-provided skills
+- Custom skills from `.claude/skills/`
+- Skill descriptions and permissions
+
+## Tasks & Agents
+
+### /tasks
+
+View and manage background tasks.
+
+```bash
+/tasks
+```
+
+**Features:**
+- View running tasks
+- See task progress
+- View task results
+- Kill tasks (Ctrl+F)
+
+<Tip>
+Use Ctrl+B to send long-running operations to background. Use Ctrl+F to kill all background agents.
+</Tip>
+
+### /agents
+
+List all configured agents.
+
+```bash
+# CLI command (outside session)
+claude agents
+
+# Within session
+/agents
+```
+
+Shows agents from:
+- Built-in agents
+- Plugin agents
+- Custom agents in `.claude/agents/`
+
+## Utilities
+
+### /help
+
+Show help and available commands.
+
+```bash
+/help
+```
+
+Displays:
+- Available slash commands
+- Keyboard shortcuts
+- Quick tips
+- Documentation links
+
+### /copy
+
+Copy assistant response to clipboard.
+
+```bash
+/copy
+```
+
+**Behavior:**
+- Shows code block picker when multiple blocks present
+- Can copy individual code blocks
+- Can copy full response
+- "Always copy full response" option available
+
+### /usage
+
+Display current plan usage statistics.
+
+```bash
+/usage
+```
+
+**Shows (if applicable):**
+- Token usage for current billing period
+- Percentage used
+- Reset date
+- Overage information
+
+<Note>
+Available for Anthropic API users. Bedrock/Vertex users see different metrics.
+</Note>
+
+### /extra-usage
+
+Manage extra usage for extended sessions.
+
+```bash
+/extra-usage
+```
+
+Enable extended context and faster models for intensive tasks.
+
+### /stats
+
+View session statistics.
+
+```bash
+/stats
+```
+
+**Date range filtering:**
+- Press `r` to cycle: Last 7 days → Last 30 days → All time
+
+**Shows:**
+- Session count by date
+- Token usage over time
+- Most used commands
+- Tool usage statistics
+
+### /doctor
+
+Diagnostic information for troubleshooting.
+
+```bash
+claude doctor
+```
+
+Provides:
+- Version information
+- Installation method
+- Auto-update channel
+- Available updates
+- Environment details
+- Configuration status
+
+### /debug
+
+Get Claude's help troubleshooting the current session.
+
+```bash
+/debug
+```
+
+Claude analyzes the current session for:
+- Common issues
+- Configuration problems
+- Error patterns
+- Suggested fixes
+
+### /feedback
+
+Submit feedback or report issues.
+
+```bash
+/feedback
+```
+
+Opens interactive form for:
+- Bug reports
+- Feature requests
+- General feedback
+- Documentation issues
+
+Generates GitHub issue URL with context.
+
+## Authentication
+
+### /login
+
+Authenticate with Anthropic.
+
+```bash
+claude auth login
+
+# Or within session
+/login
+```
+
+Supports:
+- OAuth authentication
+- API key authentication
+- Enterprise SSO
+- Manual URL paste fallback
+
+### /logout
+
+Sign out of current account.
+
+```bash
+claude auth logout
+```
+
+### /auth status
+
+Check authentication status.
+
+```bash
+claude auth status
+```
+
+Shows:
+- Current account
+- Email address
+- Organization
+- Authentication method
+- Token expiration
+
+## Advanced Commands
+
+### /fast
+
+Toggle fast mode for quicker responses.
+
+```bash
+/fast
+```
+
+Fast mode:
+- Reduces thinking time
+- Faster response generation
+- Available for Opus 4.6 and Sonnet models
+- Requires extra-usage for some plans
+
+Learn more at [Fast Mode Documentation](https://code.claude.com/docs/en/fast-mode).
+
+### /simplify
+
+Simplify code or explanations.
+
+```bash
+/simplify <topic>
+```
+
+### /batch
+
+Batch process multiple items.
+
+```bash
+/batch <items>
+```
+
+### /cost
+
+Estimate API cost for current session.
+
+```bash
+/cost
+```
+
+Shows approximate cost based on:
+- Input tokens
+- Output tokens
+- Model pricing
+- Cache usage
+
+<Warning>
+Cost estimates are approximate. Actual billing may vary based on prompt caching and other factors.
+</Warning>
+
+## Worktree Commands
+
+When using git worktree isolation:
+
+```bash
+# Start in isolated worktree
+claude --worktree
+claude -w
+```
+
+Worktree features:
+- Isolated workspace
+- Automatic cleanup
+- Branch-specific context
+- Shared project config
+
+**Worktree hooks:**
+- `WorktreeCreate` - Runs when worktree is created
+- `WorktreeRemove` - Runs when worktree is removed
+
+## Command Execution Notes
+
+<AccordionGroup>
+  <Accordion title="Command Queue">
+    Commands are queued and executed in order. Some commands like `/model` execute immediately without queuing.
+  </Accordion>
+
+  <Accordion title="Interrupt Commands">
+    Press ESC to cancel the current command. Press Ctrl+C twice within 3 seconds to kill all background agents.
+  </Accordion>
+
+  <Accordion title="Command History">
+    Use Up/Down arrows to navigate command history. History is preserved across sessions.
+  </Accordion>
+
+  <Accordion title="Multi-line Input">
+    Use Shift+Enter for multi-line input. Configure with `chat:newline` keybinding.
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<Card title="Create Custom Commands" icon="wand-magic-sparkles" href="/reference/commands/slash-commands">
+  Learn how to create your own slash commands for custom workflows
+</Card>

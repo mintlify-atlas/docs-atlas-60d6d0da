@@ -1,0 +1,628 @@
+---
+title: Project Configuration
+description: Configure project-specific behavior with CLAUDE.md, custom commands, agents, and hooks
+---
+
+Project configuration allows you to customize Claude Code's behavior for specific repositories, creating consistent workflows shared across your team.
+
+## Project Structure
+
+Claude Code uses a `.claude/` directory in your project root:
+
+```
+project-root/
+├── .claude/
+│   ├── CLAUDE.md             # Project context and conventions
+│   ├── settings.json         # Project settings
+│   ├── settings.local.json   # Local overrides (gitignored)
+│   ├── .mcp.json             # MCP server configuration
+│   ├── commands/             # Custom slash commands
+│   │   ├── deploy.md
+│   │   └── test-all.md
+│   ├── agents/               # Custom agents
+│   │   ├── security-audit.md
+│   │   └── perf-analyzer.md
+│   ├── skills/               # Custom skills
+│   │   └── api-design/
+│   │       ├── SKILL.md
+│   │       └── examples/
+│   └── hooks/                # Event hooks
+│       └── hooks.json
+├── .gitignore
+└── ...
+```
+
+## CLAUDE.md - Project Context
+
+The `CLAUDE.md` file provides project-specific context to Claude:
+
+### Location
+
+```
+.claude/CLAUDE.md
+```
+
+Or at project root:
+
+```
+CLAUDE.md
+```
+
+### What to Include
+
+**Project Overview**:
+```markdown
+# Project: E-commerce Platform
+
+A Node.js/TypeScript e-commerce backend with:
+- REST API using Express
+- PostgreSQL database
+- Redis caching
+- JWT authentication
+- Stripe payment integration
+```
+
+**Architecture**:
+```markdown
+## Architecture
+
+- **Controllers** (`src/controllers/`): Handle HTTP requests
+- **Services** (`src/services/`): Business logic
+- **Models** (`src/models/`): Database schemas (TypeORM)
+- **Middleware** (`src/middleware/`): Auth, validation, error handling
+- **Utils** (`src/utils/`): Shared utilities
+
+Data flow: Controller → Service → Model → Database
+```
+
+**Code Conventions**:
+```markdown
+## Code Style
+
+### Naming
+- Classes: PascalCase (`UserService`)
+- Functions: camelCase (`getUserById`)
+- Files: kebab-case (`user-service.ts`)
+- Constants: UPPER_SNAKE_CASE (`MAX_RETRIES`)
+
+### Patterns
+- Use async/await, never .then()
+- Dependency injection via constructor
+- All exported functions must have JSDoc
+- Prefer named exports over default
+
+### Error Handling
+```typescript
+try {
+  const result = await operation();
+  return result;
+} catch (error) {
+  logger.error('Operation failed', { error, context });
+  throw new AppError('User-friendly message', 500);
+}
+```
+
+### Testing
+- Unit tests: `*.test.ts` next to source files
+- Integration tests: `__tests__/` directories
+- Minimum 80% coverage required
+- Use Jest for all testing
+```
+
+**Technology Stack**:
+```markdown
+## Tech Stack
+
+### Backend
+- Runtime: Node.js 18+
+- Language: TypeScript 5.0
+- Framework: Express 4.x
+- ORM: TypeORM 0.3
+
+### Database
+- Primary: PostgreSQL 14
+- Cache: Redis 7
+
+### External Services
+- Payments: Stripe API
+- Email: SendGrid
+- Storage: AWS S3
+```
+
+**Common Tasks**:
+```markdown
+## Common Tasks
+
+### Running Tests
+```bash
+npm test                 # All tests
+npm test -- --watch      # Watch mode
+npm test -- --coverage   # With coverage
+```
+
+### Database
+```bash
+npm run db:migrate       # Run migrations
+npm run db:seed          # Seed data
+npm run db:reset         # Reset (dev only)
+```
+
+### Development
+```bash
+npm run dev              # Start dev server
+npm run build            # Build for production
+npm run lint             # Run ESLint
+```
+```
+
+**Constraints**:
+```markdown
+## Constraints
+
+- No console.log in production code (use logger)
+- No `any` types in TypeScript
+- All API endpoints require authentication
+- All database queries must use parameterized queries
+- All user input must be validated (use Joi schemas)
+- All secrets in environment variables, never hardcoded
+```
+
+### Complete Example
+
+```markdown
+# E-commerce API Project
+
+Node.js/TypeScript REST API for e-commerce platform.
+
+## Architecture
+
+Layered architecture:
+- **Routes** (`src/routes/`): Endpoint definitions
+- **Controllers** (`src/controllers/`): Request handling
+- **Services** (`src/services/`): Business logic
+- **Repositories** (`src/repositories/`): Data access
+- **Models** (`src/models/`): TypeORM entities
+
+## Code Conventions
+
+### File Organization
+- Feature-based: `src/features/users/`, `src/features/products/`
+- Each feature has: routes, controller, service, repository, model, tests
+
+### TypeScript
+- Strict mode enabled
+- No `any` types (use `unknown` and type guards)
+- Interfaces for all public APIs
+- Types in `*.types.ts` files
+
+### Async/Await
+```typescript
+// Good
+async function getUser(id: string): Promise<User> {
+  const user = await userRepository.findById(id);
+  if (!user) throw new NotFoundError('User not found');
+  return user;
+}
+
+// Bad - don't use .then()
+function getUser(id: string): Promise<User> {
+  return userRepository.findById(id)
+    .then(user => {
+      if (!user) throw new NotFoundError('User not found');
+      return user;
+    });
+}
+```
+
+### Error Handling
+- Use custom error classes: `AppError`, `NotFoundError`, `ValidationError`
+- Always log errors with context
+- Return user-friendly messages, log technical details
+
+```typescript
+try {
+  const result = await riskyOperation();
+  return result;
+} catch (error) {
+  logger.error('Operation failed', { 
+    error, 
+    userId, 
+    operation: 'riskyOperation' 
+  });
+  throw new AppError('Could not complete operation', 500);
+}
+```
+
+### Testing
+- Coverage requirement: 80%
+- Test file naming: `*.test.ts`
+- Use descriptive test names: `should return 404 when user not found`
+- Mock external services
+- Use factories for test data
+
+## API Design
+
+### REST Conventions
+- Use plural nouns: `/users`, `/products`
+- Nested resources: `/users/:id/orders`
+- Query params for filters: `/products?category=electronics&sort=price`
+
+### Request/Response
+```typescript
+// Success response
+{
+  "data": { ... },
+  "meta": { "timestamp": "2024-01-01T00:00:00Z" }
+}
+
+// Error response
+{
+  "error": {
+    "message": "User-friendly error",
+    "code": "VALIDATION_ERROR",
+    "details": []
+  }
+}
+```
+
+## Database
+
+### Migrations
+- Always create migrations for schema changes
+- Never edit existing migrations
+- Test migrations up and down
+
+### Queries
+- Use query builders or parameterized queries
+- Add indexes for foreign keys
+- Use transactions for multi-table operations
+
+## Security
+
+- All endpoints authenticated (except auth endpoints)
+- Use bcrypt for passwords (cost factor: 12)
+- JWT tokens expire in 1 hour
+- Refresh tokens in HTTP-only cookies
+- Rate limit: 100 requests/minute per IP
+- Input validation with Joi schemas
+- Sanitize all user input
+- No secrets in code (use `.env`)
+
+## Environment Variables
+
+Required in `.env`:
+```bash
+NODE_ENV=development
+PORT=3000
+DATABASE_URL=postgresql://...
+REDIS_URL=redis://...
+JWT_SECRET=...
+STRIPE_SECRET_KEY=...
+```
+
+## Commit Messages
+
+Follow Conventional Commits:
+```
+feat(users): add password reset endpoint
+fix(auth): handle expired tokens correctly
+docs(api): update authentication docs
+test(products): add integration tests
+```
+
+## Dependencies
+
+- Keep dependencies up to date (review monthly)
+- No deprecated packages
+- Audit with `npm audit` before committing
+- Document why each dependency is needed
+```
+
+## Project Settings
+
+### settings.json
+
+Project-wide settings shared via git:
+
+```json
+{
+  "model": "claude-sonnet-4.6",
+  "permissions": {
+    "allow": [
+      "Read",
+      "Grep",
+      "Glob",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(npm test:*)",
+      "Bash(npm run:*)"
+    ],
+    "ask": [
+      "Edit",
+      "Write",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
+    ],
+    "deny": [
+      "Bash(rm -rf:*)",
+      "Bash(git push --force:*)"
+    ]
+  },
+  "verbose": false,
+  "theme": "auto",
+  "spinnerVerbs": ["Building", "Testing", "Deploying"]
+}
+```
+
+### settings.local.json
+
+Personal overrides (not committed):
+
+```json
+{
+  "theme": "dark",
+  "verbose": true,
+  "permissions": {
+    "allow": [
+      "Edit",
+      "Write"
+    ]
+  }
+}
+```
+
+Add to `.gitignore`:
+```
+.claude/settings.local.json
+.claude/.mcp.json  # If contains credentials
+```
+
+## Custom Commands
+
+Create project-specific workflows:
+
+### Deploy Command
+
+`.claude/commands/deploy.md`:
+```markdown
+---
+description: Deploy to production
+allowed-tools: Bash(git:*), Bash(npm:*)
+---
+
+# Production Deployment
+
+Deploy application to production:
+
+1. Verify on main branch: !`git branch --show-current`
+2. Ensure clean working directory: !`git status --porcelain`
+3. Run tests: !`npm test`
+4. Build: !`npm run build`
+5. Tag version: !`git tag -a v$(node -p "require('./package.json').version") -m "Release"`
+6. Push tag: !`git push --tags`
+7. Deploy: !`npm run deploy:prod`
+
+Stop if any step fails.
+```
+
+### Database Reset
+
+`.claude/commands/db-reset.md`:
+```markdown
+---
+description: Reset development database
+allowed-tools: Bash(npm:*)
+---
+
+# Database Reset
+
+**WARNING: This will destroy all data!**
+
+1. Confirm with user first
+2. Drop database: !`npm run db:drop`
+3. Create database: !`npm run db:create`  
+4. Run migrations: !`npm run db:migrate`
+5. Seed data: !`npm run db:seed`
+
+Report status after each step.
+```
+
+## Custom Agents
+
+Specialized project agents:
+
+### API Documentation Generator
+
+`.claude/agents/api-docs.md`:
+```markdown
+---
+description: Generate API documentation from code
+model: claude-sonnet-4.6
+tools: ["Read", "Grep", "Write"]
+---
+
+# API Documentation Generator
+
+Generate API documentation:
+
+1. Find all route files in `src/routes/`
+2. Extract from each route:
+   - HTTP method and path
+   - Request parameters (path, query, body)
+   - Response schema
+   - Error codes
+   - Authentication requirements
+3. Generate Markdown documentation
+4. Write to `docs/api.md`
+
+Follow OpenAPI 3.0 structure for consistency.
+```
+
+### Database Migration Creator
+
+`.claude/agents/create-migration.md`:
+```markdown
+---
+description: Create database migration from schema changes
+model: claude-opus-4.6
+tools: ["Read", "Write", "Bash"]
+---
+
+# Migration Creator
+
+Create migration for: $ARGUMENTS
+
+1. Analyze current schema in `src/models/`
+2. Determine required changes
+3. Generate TypeORM migration
+4. Create migration file: `src/migrations/TIMESTAMP-{description}.ts`
+5. Include up and down migrations
+6. Test migration locally
+
+Follow TypeORM migration patterns from existing migrations.
+```
+
+## Event Hooks
+
+Automate workflows with hooks:
+
+`.claude/hooks/hooks.json`:
+```json
+{
+  "hooks": [
+    {
+      "name": "lint-on-edit",
+      "events": ["PostToolUse"],
+      "command": "npm run lint:fix",
+      "match": {
+        "tool": "Edit",
+        "file": "src/**/*.ts"
+      }
+    },
+    {
+      "name": "test-before-commit",
+      "events": ["PreToolUse"],
+      "command": "npm test",
+      "match": {
+        "tool": "Bash",
+        "pattern": "git commit:*"
+      },
+      "blocking": true
+    },
+    {
+      "name": "security-check",
+      "events": ["PreToolUse"],
+      "command": "./scripts/security-check.sh",
+      "match": {
+        "tool": "Bash",
+        "pattern": "npm install:*"
+      },
+      "blocking": true
+    }
+  ]
+}
+```
+
+## MCP Configuration
+
+Connect external tools:
+
+`.claude/.mcp.json`:
+```json
+{
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+      }
+    },
+    "postgres": {
+      "command": "python",
+      "args": ["-m", "mcp_server_postgres"],
+      "env": {
+        "DATABASE_URL": "${DATABASE_URL}"
+      }
+    }
+  }
+}
+```
+
+<Warning>
+  Don't commit credentials! Use environment variables and add `.mcp.json` to `.gitignore` if it contains secrets.
+</Warning>
+
+## Best Practices
+
+<Tip>
+  **Document conventions**: Keep CLAUDE.md updated with project patterns
+</Tip>
+
+<Tip>
+  **Share commands**: Commit useful commands to help the whole team
+</Tip>
+
+<Tip>
+  **Use local settings**: Personal preferences go in settings.local.json
+</Tip>
+
+<Tip>
+  **Version control**: Commit `.claude/` to git (except .local.json)
+</Tip>
+
+<Tip>
+  **Test hooks**: Use `blocking: false` while developing hooks
+</Tip>
+
+## Troubleshooting
+
+### CLAUDE.md Not Loaded
+
+**Issue**: Claude doesn't follow project conventions
+
+**Solutions**:
+- Check file location: `.claude/CLAUDE.md` or project root
+- Verify file is not too large (stays within context limits)
+- Reference explicitly: "Follow guidelines in @CLAUDE.md"
+
+### Commands Not Appearing
+
+**Issue**: Custom commands don't show in autocomplete
+
+**Solutions**:
+- Check files are in `.claude/commands/`
+- Verify `.md` extension
+- Check frontmatter syntax
+- Restart Claude Code
+
+### Hooks Not Executing
+
+**Issue**: Event hooks don't fire
+
+**Solutions**:
+- Verify `hooks.json` syntax
+- Check event names
+- Test command manually
+- Check match patterns
+- Look for errors in output
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Settings" icon="sliders" href="/configuration/settings">
+    Configure global and project settings
+  </Card>
+  
+  <Card title="Task Automation" icon="robot" href="/guides/task-automation">
+    Create commands, agents, and hooks
+  </Card>
+  
+  <Card title="Environment Variables" icon="terminal" href="/configuration/environment-variables">
+    Use environment-based configuration
+  </Card>
+  
+  <Card title="Git Workflows" icon="git-alt" href="/guides/git-workflows">
+    Automate version control
+  </Card>
+</CardGroup>

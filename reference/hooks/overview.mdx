@@ -1,0 +1,441 @@
+---
+title: Hooks Overview
+description: Understanding the hooks system in Claude Code for lifecycle events and tool interception
+---
+
+Hooks allow you to execute custom code at specific points in Claude Code's lifecycle, enabling powerful integrations, validation, and automation workflows.
+
+## What are Hooks?
+
+Hooks are scripts that run automatically when specific events occur:
+
+- **Session lifecycle events** - When sessions start or stop
+- **Tool execution** - Before or after tools are used
+- **Git worktree operations** - When worktrees are created or removed
+- **Configuration changes** - When settings are modified
+- **Agent operations** - When agents become idle or tasks complete
+
+## Hook Types
+
+<CardGroup cols={2}>
+  <Card title="Lifecycle Hooks" icon="rotate">
+    - SessionStart
+    - Stop
+    - Setup
+    - WorktreeCreate
+    - WorktreeRemove
+  </Card>
+  <Card title="Tool Hooks" icon="wrench">
+    - PreToolUse
+    - PostToolUse
+  </Card>
+  <Card title="Configuration Hooks" icon="gear">
+    - ConfigChange
+  </Card>
+  <Card title="Agent Hooks" icon="users">
+    - TeammateIdle
+    - TaskCompleted
+    - SubagentStop
+  </Card>
+</CardGroup>
+
+## Hook Configuration
+
+Hooks are configured in `hooks.json` files:
+
+```json hooks.json
+{
+  "description": "Security validation hooks",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /path/to/validator.py"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### Hook Locations
+
+Hooks can be defined at multiple levels:
+
+```bash
+# Project-level hooks
+project/.claude/hooks/hooks.json
+
+# User-level hooks  
+~/.claude/hooks/hooks.json
+
+# Plugin hooks
+plugins/my-plugin/hooks/hooks.json
+
+# Managed/enterprise hooks (highest priority)
+managed-hooks.json
+```
+
+<Note>
+Managed hooks have the highest priority and cannot be disabled by users when `allowManagedHooksOnly` is set.
+</Note>
+
+## Hook Input/Output
+
+### Input Format
+
+Hooks receive JSON input via stdin:
+
+```json
+{
+  "session_id": "abc123",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "git push"
+  },
+  "transcript_path": "/path/to/transcript.jsonl",
+  "last_assistant_message": "Pushing changes to remote..."
+}
+```
+
+### Output Format
+
+Hooks can output JSON to control behavior:
+
+```json
+{
+  "decision": "block",
+  "reason": "This command requires approval",
+  "additionalContext": "Security policy: all git push requires manual review"
+}
+```
+
+### Exit Codes
+
+<ParamField path="0" type="Allow">
+  Tool execution proceeds normally.
+</ParamField>
+
+<ParamField path="1" type="Error (user only)">
+  Shows stderr to the user but not to Claude. Tool execution proceeds.
+</ParamField>
+
+<ParamField path="2" type="Block">
+  Blocks tool execution and shows stderr to Claude. Claude can see the error and adjust.
+</ParamField>
+
+<ParamField path="3+" type="Error">
+  Generic error. Tool execution may be blocked.
+</ParamField>
+
+## Hook Types Explained
+
+### Command Hooks
+
+Execute shell commands:
+
+```json
+{
+  "type": "command",
+  "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/validator.py"
+}
+```
+
+**Available variables:**
+- `${CLAUDE_PLUGIN_ROOT}` - Plugin directory path
+- `${CLAUDE_SESSION_ID}` - Current session ID
+- Environment variables from the session
+
+### HTTP Hooks
+
+POST JSON to a URL and receive JSON response:
+
+```json
+{
+  "type": "http",
+  "url": "https://api.example.com/validate",
+  "method": "POST",
+  "headers": {
+    "Authorization": "Bearer ${API_TOKEN}"
+  }
+}
+```
+
+**Request body:**
+```json
+{
+  "session_id": "abc123",
+  "tool_name": "Bash",
+  "tool_input": { ... }
+}
+```
+
+**Response format:**
+```json
+{
+  "decision": "allow",
+  "additionalContext": "Validation passed"
+}
+```
+
+<Tip>
+HTTP hooks enable integration with external validation services, audit systems, and security policies.
+</Tip>
+
+## Tool Matchers
+
+Control which tools trigger hooks:
+
+### Exact Match
+
+```json
+{
+  "matcher": "Bash",
+  "hooks": [ ... ]
+}
+```
+
+### Multiple Tools
+
+```json
+{
+  "matcher": "Edit|Write|MultiEdit",
+  "hooks": [ ... ]
+}
+```
+
+### All Tools
+
+```json
+{
+  "matcher": "*",
+  "hooks": [ ... ]
+}
+```
+
+## Use Cases
+
+<AccordionGroup>
+  <Accordion title="Security Validation">
+    Validate commands before execution:
+    
+    ```python
+    # Check for dangerous patterns
+    if 'rm -rf' in command:
+        print("Dangerous command detected", file=sys.stderr)
+        sys.exit(2)  # Block execution
+    ```
+  </Accordion>
+
+  <Accordion title="Audit Logging">
+    Log all tool usage for compliance:
+    
+    ```python
+    # Log to central system
+    log_entry = {
+        "session_id": data["session_id"],
+        "tool": data["tool_name"],
+        "timestamp": datetime.now().isoformat()
+    }
+    send_to_audit_system(log_entry)
+    ```
+  </Accordion>
+
+  <Accordion title="Command Transformation">
+    Transform commands before execution:
+    
+    ```python
+    # Replace grep with ripgrep
+    if command.startswith('grep '):
+        new_command = command.replace('grep', 'rg', 1)
+        print(f"Using rg instead: {new_command}", file=sys.stderr)
+    ```
+  </Accordion>
+
+  <Accordion title="Environment Setup">
+    Configure environment on session start:
+    
+    ```bash
+    # SessionStart hook
+    export PROJECT_ENV="development"
+    source .env.local
+    echo "Environment configured" >&2
+    ```
+  </Accordion>
+
+  <Accordion title="Cleanup Operations">
+    Clean up resources on session end:
+    
+    ```bash
+    # Stop hook
+    docker-compose down
+    rm -rf tmp/session-*
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Security Considerations
+
+<Warning>
+Hooks run with the same permissions as Claude Code. Use caution when:
+- Accepting hooks from untrusted sources
+- Running hooks in production environments
+- Granting hooks network access
+</Warning>
+
+### Enterprise Controls
+
+Organizations can enforce hook policies:
+
+```json settings.json
+{
+  "allowManagedHooksOnly": true,
+  "disableAllHooks": false
+}
+```
+
+**Effects:**
+- Users cannot define custom hooks
+- Only managed hooks execute
+- Provides centralized control
+
+### Hook Trust
+
+When installing plugins with hooks:
+
+1. Review hook code before accepting
+2. Check hook permissions and scope
+3. Understand what data hooks can access
+4. Monitor hook execution in logs
+
+## Performance
+
+### Hook Execution Time
+
+Hooks run synchronously and block tool execution:
+
+- Keep hooks fast (< 100ms recommended)
+- Use background processes for slow operations
+- Cache results when possible
+- Avoid network calls in hot paths
+
+### Optimization Tips
+
+<CodeGroup>
+```python Fast Hook
+import sys
+import json
+
+# Quick validation
+data = json.load(sys.stdin)
+if is_valid(data):  # Fast check
+    sys.exit(0)
+sys.exit(2)
+```
+
+```python Background Work
+import sys
+import json
+import subprocess
+
+# Fork background process
+data = json.load(sys.stdin)
+subprocess.Popen(['python3', 'slow_task.py', data['session_id']])
+
+# Return immediately
+sys.exit(0)
+```
+</CodeGroup>
+
+## Hook Development Workflow
+
+1. **Plan the hook**
+   - Identify the lifecycle event
+   - Determine input/output requirements
+   - Choose command or HTTP hook type
+
+2. **Implement the hook**
+   - Write the hook script
+   - Handle JSON input/output
+   - Implement error handling
+
+3. **Configure hooks.json**
+   - Set up matchers
+   - Configure hook execution
+   - Add description
+
+4. **Test the hook**
+   - Test with various inputs
+   - Verify exit codes
+   - Check error messages
+
+5. **Deploy**
+   - Add to `.claude/hooks/`
+   - Or package in a plugin
+   - Document behavior
+
+## Debugging Hooks
+
+### Enable Debug Logging
+
+```python
+import sys
+
+DEBUG_LOG = "/tmp/hook-debug.log"
+
+def log(msg):
+    with open(DEBUG_LOG, 'a') as f:
+        f.write(f"{datetime.now()}: {msg}\n")
+
+log(f"Hook called with: {json.dumps(data)}")
+```
+
+### Check Hook Execution
+
+Hook execution is logged in Claude Code's debug logs:
+
+```bash
+# Check if hook executed
+grep "hook" ~/.claude/logs/debug.log
+
+# Check for hook errors
+grep "hook.*error" ~/.claude/logs/debug.log
+```
+
+### Common Issues
+
+<AccordionGroup>
+  <Accordion title="Hook not executing">
+    - Verify `hooks.json` is valid JSON
+    - Check matcher pattern matches tool name
+    - Ensure hook script has execute permissions
+    - Check hook path is correct
+  </Accordion>
+
+  <Accordion title="Hook blocking when it shouldn't">
+    - Check exit code (should be 0 to allow)
+    - Verify no stderr output
+    - Check for unhandled exceptions
+  </Accordion>
+
+  <Accordion title="Hook input not available">
+    - Ensure reading from stdin
+    - Parse JSON correctly
+    - Check for required fields in input
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Lifecycle Events" icon="timeline" href="/reference/hooks/lifecycle-events">
+    Learn about all available lifecycle events
+  </Card>
+  <Card title="Hook Examples" icon="code" href="/reference/hooks/examples">
+    See real-world hook implementations
+  </Card>
+</CardGroup>

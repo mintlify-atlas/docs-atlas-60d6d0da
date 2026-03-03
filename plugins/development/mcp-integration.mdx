@@ -1,0 +1,490 @@
+---
+title: MCP Integration
+description: Integrate Model Context Protocol servers into Claude Code plugins
+---
+
+Model Context Protocol (MCP) enables Claude Code plugins to integrate with external services and APIs by providing structured tool access. Use MCP integration to expose external service capabilities as tools within Claude Code.
+
+## What is MCP?
+
+MCP allows you to:
+- **Connect to external services** (databases, APIs, file systems)
+- **Provide 10+ related tools** from a single service
+- **Handle OAuth** and complex authentication flows
+- **Bundle MCP servers** with plugins for automatic setup
+
+## Configuration Methods
+
+Plugins can bundle MCP servers in two ways:
+
+### Method 1: Dedicated .mcp.json (Recommended)
+
+Create `.mcp.json` at plugin root:
+
+```json
+{
+  "database-tools": {
+    "command": "${CLAUDE_PLUGIN_ROOT}/servers/db-server",
+    "args": ["--config", "${CLAUDE_PLUGIN_ROOT}/config.json"],
+    "env": {
+      "DB_URL": "${DB_URL}"
+    }
+  }
+}
+```
+
+**Benefits:**
+- Clear separation of concerns
+- Easier to maintain
+- Better for multiple servers
+
+### Method 2: Inline in plugin.json
+
+Add `mcpServers` field to plugin.json:
+
+```json
+{
+  "name": "my-plugin",
+  "version": "1.0.0",
+  "mcpServers": {
+    "plugin-api": {
+      "command": "${CLAUDE_PLUGIN_ROOT}/servers/api-server",
+      "args": ["--port", "8080"]
+    }
+  }
+}
+```
+
+**Benefits:**
+- Single configuration file
+- Good for simple single-server plugins
+
+## MCP Server Types
+
+### stdio (Local Process)
+
+Execute local MCP servers as child processes. Best for local tools and custom servers.
+
+**Configuration:**
+```json
+{
+  "filesystem": {
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-filesystem", "/allowed/path"],
+    "env": {
+      "LOG_LEVEL": "debug"
+    }
+  }
+}
+```
+
+**Use cases:**
+- File system access
+- Local database connections
+- Custom MCP servers
+- NPM-packaged MCP servers
+
+**Process management:**
+- Claude Code spawns and manages the process
+- Communicates via stdin/stdout
+- Terminates when Claude Code exits
+
+### SSE (Server-Sent Events)
+
+Connect to hosted MCP servers with OAuth support. Best for cloud services.
+
+**Configuration:**
+```json
+{
+  "asana": {
+    "type": "sse",
+    "url": "https://mcp.asana.com/sse"
+  }
+}
+```
+
+**Use cases:**
+- Official hosted MCP servers (Asana, GitHub, etc.)
+- Cloud services with MCP endpoints
+- OAuth-based authentication
+- No local installation needed
+
+**Authentication:**
+- OAuth flows handled automatically
+- User prompted on first use
+- Tokens managed by Claude Code
+
+### HTTP (REST API)
+
+Connect to RESTful MCP servers with token authentication.
+
+**Configuration:**
+```json
+{
+  "api-service": {
+    "type": "http",
+    "url": "https://api.example.com/mcp",
+    "headers": {
+      "Authorization": "Bearer ${API_TOKEN}",
+      "X-Custom-Header": "value"
+    }
+  }
+}
+```
+
+**Use cases:**
+- REST API-based MCP servers
+- Token-based authentication
+- Custom API backends
+- Stateless interactions
+
+### WebSocket (Real-time)
+
+Connect to WebSocket MCP servers for real-time bidirectional communication.
+
+**Configuration:**
+```json
+{
+  "realtime-service": {
+    "type": "websocket",
+    "url": "wss://realtime.example.com/mcp"
+  }
+}
+```
+
+**Use cases:**
+- Real-time data streams
+- Bidirectional communication
+- Push notifications
+- Live updates
+
+## Environment Variables
+
+### ${CLAUDE_PLUGIN_ROOT}
+
+Use for portable paths to bundled servers:
+
+```json
+{
+  "command": "node ${CLAUDE_PLUGIN_ROOT}/servers/custom-server.js"
+}
+```
+
+<Warning>
+  Always use ${CLAUDE_PLUGIN_ROOT} for paths to ensure plugin portability.
+</Warning>
+
+### User Environment Variables
+
+Access user's environment variables:
+
+```json
+{
+  "env": {
+    "DATABASE_URL": "${DATABASE_URL}",
+    "API_KEY": "${API_KEY}",
+    "DEBUG": "true"
+  }
+}
+```
+
+Users set these in `.env` file:
+```bash
+DATABASE_URL=postgresql://localhost/mydb
+API_KEY=sk-...
+```
+
+## Using MCP Tools
+
+### In Commands
+
+Reference MCP tools in command files:
+
+```markdown
+---
+description: Query the database
+---
+
+Use the `database_query` tool from the database-tools MCP server to:
+1. Query the users table
+2. Filter by active status
+3. Return results formatted as JSON
+```
+
+### In Agents
+
+List MCP tools in agent tools array:
+
+```markdown
+---
+name: database-analyst
+tools: ["database_query", "database_schema", "Read", "Write"]
+---
+
+You are a database analyst with access to database tools...
+```
+
+<Note>
+  MCP tool names are automatically available when the MCP server is configured.
+</Note>
+
+## Example Configurations
+
+### File System MCP Server
+
+`.mcp.json`:
+```json
+{
+  "filesystem": {
+    "command": "npx",
+    "args": [
+      "-y",
+      "@modelcontextprotocol/server-filesystem",
+      "${CLAUDE_PLUGIN_ROOT}/allowed-directory"
+    ]
+  }
+}
+```
+
+**Tools provided:**
+- `read_file`
+- `write_file`
+- `list_directory`
+- `create_directory`
+- `delete_file`
+
+### PostgreSQL MCP Server
+
+`.mcp.json`:
+```json
+{
+  "postgres": {
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-postgres"],
+    "env": {
+      "POSTGRES_URL": "${DATABASE_URL}"
+    }
+  }
+}
+```
+
+**Tools provided:**
+- `query`
+- `schema`
+- `tables`
+- `describe_table`
+
+### GitHub MCP Server
+
+`.mcp.json`:
+```json
+{
+  "github": {
+    "type": "sse",
+    "url": "https://mcp.github.com/sse"
+  }
+}
+```
+
+**Tools provided:**
+- `create_issue`
+- `list_prs`
+- `create_pr`
+- `merge_pr`
+- `get_file`
+- `commit_changes`
+
+### Custom API Server
+
+`.mcp.json`:
+```json
+{
+  "company-api": {
+    "type": "http",
+    "url": "https://api.company.com/mcp",
+    "headers": {
+      "Authorization": "Bearer ${COMPANY_API_TOKEN}",
+      "X-API-Version": "v2"
+    }
+  }
+}
+```
+
+## Custom MCP Servers
+
+### Creating a Custom Server
+
+Bundle a custom MCP server with your plugin:
+
+**Directory structure:**
+```
+my-plugin/
+├── .claude-plugin/
+│   └── plugin.json
+├── servers/
+│   └── custom-server.js
+└── .mcp.json
+```
+
+**Configuration:**
+```json
+{
+  "custom-tools": {
+    "command": "node ${CLAUDE_PLUGIN_ROOT}/servers/custom-server.js"
+  }
+}
+```
+
+**Server implementation** (`servers/custom-server.js`):
+```javascript
+import { MCPServer } from '@modelcontextprotocol/sdk';
+
+const server = new MCPServer({
+  name: 'custom-tools',
+  version: '1.0.0'
+});
+
+server.tool('custom_operation', {
+  description: 'Performs a custom operation',
+  parameters: {
+    input: { type: 'string', description: 'Input data' }
+  },
+  handler: async ({ input }) => {
+    // Implementation
+    return { result: `Processed: ${input}` };
+  }
+});
+
+server.start();
+```
+
+## Authentication Patterns
+
+### OAuth (SSE Servers)
+
+Handled automatically by Claude Code:
+
+```json
+{
+  "oauth-service": {
+    "type": "sse",
+    "url": "https://service.com/mcp"
+  }
+}
+```
+
+User prompted on first use to authenticate.
+
+### Token-Based (HTTP Servers)
+
+User provides token via environment variable:
+
+```json
+{
+  "api-service": {
+    "type": "http",
+    "url": "https://api.example.com",
+    "headers": {
+      "Authorization": "Bearer ${API_TOKEN}"
+    }
+  }
+}
+```
+
+User sets in `.env`:
+```bash
+API_TOKEN=your_token_here
+```
+
+### API Key (Query Parameter)
+
+```json
+{
+  "api-service": {
+    "type": "http",
+    "url": "https://api.example.com/mcp?key=${API_KEY}"
+  }
+}
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Use Portable Paths" icon="route">
+    Always use ${CLAUDE_PLUGIN_ROOT} for server paths
+  </Card>
+  <Card title="Environment Variables" icon="key">
+    Never hardcode credentials, use ${ENV_VAR} syntax
+  </Card>
+  <Card title="Dedicated Config" icon="file">
+    Use .mcp.json for cleaner separation
+  </Card>
+  <Card title="Document Tools" icon="book">
+    List available MCP tools in plugin README
+  </Card>
+</CardGroup>
+
+## Security Considerations
+
+<Warning>
+  MCP servers have access to external services. Validate inputs and limit permissions.
+</Warning>
+
+- **Least privilege**: Grant minimum necessary permissions
+- **Input validation**: Validate all user inputs before passing to MCP tools
+- **Secure credentials**: Use environment variables, never hardcode
+- **HTTPS/WSS**: Use secure protocols for network servers
+- **Audit logs**: Log MCP server operations for security review
+
+## Troubleshooting
+
+### Server Not Starting
+
+**Issue**: MCP server fails to start
+
+**Solutions**:
+- Check command path with ${CLAUDE_PLUGIN_ROOT}
+- Verify server binary exists and is executable
+- Check environment variables are set
+- Review server logs: `claude --debug`
+
+### Tools Not Available
+
+**Issue**: MCP tools don't appear
+
+**Solutions**:
+- Verify server started successfully
+- Check server name matches configuration
+- Ensure server exposes tools correctly
+- Restart Claude Code session
+
+### Authentication Failures
+
+**Issue**: OAuth or token authentication fails
+
+**Solutions**:
+- For OAuth: Clear cached credentials and re-authenticate
+- For tokens: Verify ${ENV_VAR} is set correctly
+- Check token hasn't expired
+- Review authentication headers
+
+### Connection Timeouts
+
+**Issue**: Network MCP servers timeout
+
+**Solutions**:
+- Check network connectivity
+- Verify URL is correct and accessible
+- Increase timeout if needed
+- Check firewall settings
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="MCP SDK Docs" icon="book" href="https://modelcontextprotocol.io">
+    Learn more about MCP protocol and creating servers
+  </Card>
+  <Card title="Example Servers" icon="code" href="https://github.com/modelcontextprotocol/servers">
+    Browse official MCP server implementations
+  </Card>
+</CardGroup>

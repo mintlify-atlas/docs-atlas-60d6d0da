@@ -1,0 +1,609 @@
+---
+title: Code Review
+description: Automate code review with specialized agents that analyze quality, bugs, conventions, and best practices
+---
+
+Claude Code provides powerful code review capabilities through specialized agents that analyze your code for bugs, quality issues, security vulnerabilities, and convention compliance.
+
+## Quick Start
+
+Review code with natural language:
+
+```
+> Review @src/api/auth.js for bugs and security issues
+```
+
+Or use the code-reviewer agent:
+
+```
+> Launch code-reviewer to analyze my recent changes
+```
+
+For comprehensive PR reviews:
+
+```
+> /review-pr --aspects all
+```
+
+## Code Review Agents
+
+### code-reviewer (Built-in)
+
+**Purpose**: General code quality and bug detection
+
+**What it checks**:
+- **Bugs**: Logic errors, race conditions, null pointer issues
+- **Code quality**: DRY violations, complexity, maintainability
+- **Project conventions**: Adherence to CLAUDE.md guidelines
+- **Best practices**: Language-specific patterns and idioms
+
+**Confidence filtering**: Only reports issues with ≥80% confidence to reduce false positives
+
+**Example usage**:
+```
+> Launch code-reviewer to check @src/services/
+```
+
+**Example output**:
+```
+Code Review Results
+
+Critical Issues (95-100% confidence):
+
+1. [Bug] Unhandled promise rejection in createUser
+   Location: src/services/UserService.js:67
+   Confidence: 98%
+   
+   Current code:
+   async createUser(data) {
+     const user = await db.insert(data);
+     return user;
+   }
+   
+   Issue: Database insert can fail but error isn't handled
+   
+   Fix: Add try-catch or .catch() handler
+   try {
+     const user = await db.insert(data);
+     return user;
+   } catch (error) {
+     logger.error('User creation failed:', error);
+     throw new AppError('Could not create user', 500);
+   }
+
+2. [Security] SQL injection vulnerability
+   Location: src/services/UserService.js:89
+   Confidence: 95%
+   
+   Current code:
+   const query = `SELECT * FROM users WHERE email = '${email}'`;
+   
+   Issue: User input directly interpolated into SQL query
+   
+   Fix: Use parameterized queries
+   const query = 'SELECT * FROM users WHERE email = ?';
+   db.query(query, [email]);
+
+Important Issues (80-94% confidence):
+
+1. [Quality] Duplicate validation logic
+   Locations: src/services/UserService.js:45, src/api/users.js:23
+   Confidence: 88%
+   
+   Both locations validate email format identically.
+   Suggestion: Extract to shared utility in src/utils/validation.js
+
+2. [Convention] Missing JSDoc comments
+   Location: src/services/UserService.js (all exported methods)
+   Confidence: 80%
+   
+   CLAUDE.md specifies: "All exported functions must have JSDoc"
+```
+
+### PR Review Toolkit Plugin
+
+For comprehensive PR reviews, use the `pr-review-toolkit` plugin:
+
+```
+> /review-pr
+```
+
+**Available aspects** (use `--aspects` flag):
+
+| Aspect | Agent | What It Checks |
+|--------|-------|----------------|
+| `comments` | comment-analyzer | Code comments, documentation quality |
+| `tests` | pr-test-analyzer | Test coverage, test quality |
+| `errors` | silent-failure-hunter | Error handling, silent failures |
+| `types` | type-design-analyzer | Type safety, API contracts |
+| `code` | code-reviewer | General code quality, bugs |
+| `simplify` | code-simplifier | Code simplification opportunities |
+| `all` | All agents | Comprehensive review |
+
+**Example: Full review**
+```
+> /review-pr --aspects all
+```
+
+**Example: Specific aspects**
+```
+> /review-pr --aspects tests,errors,types
+```
+
+### Specialized Review Agents
+
+#### comment-analyzer
+
+**Checks**:
+- Missing or outdated comments
+- Documentation completeness
+- Comment quality and clarity
+- JSDoc/docstring compliance
+
+**Example**:
+```
+Comments Analysis:
+
+⚠ Missing function documentation:
+  - src/api/users.js:45 - createUser
+  - src/api/users.js:78 - updateUser
+  
+✓ Well-documented:
+  - src/services/AuthService.js (100% coverage)
+  
+Recommendation: Add JSDoc for public API functions
+```
+
+#### pr-test-analyzer
+
+**Checks**:
+- Test coverage for new/changed code
+- Test quality (assertions, edge cases)
+- Missing test cases
+- Test organization
+
+**Example**:
+```
+Test Analysis:
+
+Coverage: 73% (⚠ below 80% threshold)
+
+Untested code:
+  - src/api/auth.js:67-89 (error handling branch)
+  - src/services/UserService.js:120-145 (new feature)
+  
+Test quality issues:
+  - tests/api.test.js:45 - No assertions for error cases
+  - tests/services.test.js:23 - Incomplete edge case coverage
+  
+Recommendation: Add tests for:
+  1. Error handling in auth middleware
+  2. Edge cases in user validation
+  3. Concurrent request scenarios
+```
+
+#### silent-failure-hunter
+
+**Checks**:
+- Unhandled errors
+- Swallowed exceptions
+- Missing error logs
+- Silent failure patterns
+
+**Example**:
+```
+Error Handling Analysis:
+
+Critical:
+  1. Unhandled promise rejection
+     src/api/payments.js:67
+     .then() chain without .catch()
+     
+  2. Caught but not logged
+     src/services/EmailService.js:89
+     catch (e) { } // empty catch block
+
+Warnings:
+  1. Generic error messages
+     src/api/users.js:45
+     throw new Error('Error') // not descriptive
+     
+Recommendation: Add proper error handling and logging
+```
+
+#### type-design-analyzer
+
+**Checks**:
+- Type safety (TypeScript)
+- API contract clarity
+- Type completeness
+- Generic type usage
+
+**Example**:
+```
+Type Design Analysis:
+
+Issues:
+  1. Overly permissive types
+     src/api/users.ts:23
+     params: any // should be specific interface
+     
+  2. Missing null checks
+     src/services/UserService.ts:67
+     user.profile.avatar // profile might be null
+     
+  3. Inconsistent return types
+     src/api/auth.ts:45,78
+     Sometimes returns User, sometimes User | null
+     
+Recommendations:
+  - Define UserParams interface
+  - Add optional chaining or null checks
+  - Use consistent return types (e.g., Promise<User | null>)
+```
+
+#### code-simplifier
+
+**Checks**:
+- Over-complex code
+- Opportunities for refactoring
+- Verbose patterns
+- Modern language feature usage
+
+**Example**:
+```
+Simplification Opportunities:
+
+1. Replace verbose promise chain with async/await
+   src/api/users.js:45-67
+   
+   Current (9 lines):
+   function getUser(id) {
+     return db.query('SELECT * FROM users WHERE id = ?', [id])
+       .then(user => {
+         if (!user) {
+           throw new Error('Not found');
+         }
+         return user;
+       })
+       .catch(error => {
+         logger.error(error);
+         throw error;
+       });
+   }
+   
+   Simplified (6 lines):
+   async function getUser(id) {
+     try {
+       const user = await db.query('SELECT * FROM users WHERE id = ?', [id]);
+       if (!user) throw new Error('Not found');
+       return user;
+     } catch (error) {
+       logger.error(error);
+       throw error;
+     }
+   }
+
+2. Use destructuring for cleaner code
+   src/services/UserService.js:89
+   
+   Current:
+   const email = user.email;
+   const name = user.name;
+   const role = user.role;
+   
+   Simplified:
+   const { email, name, role } = user;
+```
+
+## Review Workflows
+
+### Pre-Commit Review
+
+Review changes before committing:
+
+```
+1. > Show me what I changed
+2. > Launch code-reviewer to check my changes
+3. (Review findings and fix issues)
+4. > /commit
+```
+
+### PR Review Workflow
+
+Comprehensive PR review:
+
+```
+1. $ claude --from-pr 123
+2. > /review-pr --aspects all
+3. (Review agent findings)
+4. > Fix the critical issues found
+5. > Add tests for uncovered code
+6. > /commit with message "Address code review feedback"
+7. > Push changes
+```
+
+### Focused Review
+
+Review specific aspects:
+
+```
+> Launch 3 agents in parallel:
+  1. code-reviewer for bug detection
+  2. silent-failure-hunter for error handling
+  3. pr-test-analyzer for test coverage
+```
+
+### Iterative Review
+
+Multiple review rounds:
+
+```
+1. > Review @src/api/ for critical issues only
+2. (Fix critical issues)
+3. > Review @src/api/ for quality improvements
+4. (Apply improvements)
+5. > Final review of @src/api/
+```
+
+## Custom Review Agents
+
+Create project-specific review agents in `.claude/agents/`:
+
+```markdown
+---
+description: Check for performance anti-patterns
+model: claude-sonnet-4.6
+tools: ["Read", "Grep"]
+---
+
+# Performance Review Agent
+
+Analyze code for performance issues:
+
+1. N+1 query patterns
+   - Look for loops with database queries
+   - Check for missing eager loading
+   
+2. Inefficient algorithms
+   - Nested loops on large datasets
+   - Unnecessary iterations
+   
+3. Missing caching
+   - Repeated expensive operations
+   - Static data fetched repeatedly
+   
+4. Memory leaks
+   - Event listeners not cleaned up
+   - Large objects not released
+   
+Files to review: $ARGUMENTS
+
+Provide:
+- Specific file:line references
+- Performance impact estimate
+- Suggested fixes with code examples
+```
+
+Use with:
+```
+> Launch performance-review for @src/api/
+```
+
+## CLAUDE.md Integration
+
+Define review criteria in `.claude/CLAUDE.md`:
+
+```markdown
+# Code Review Checklist
+
+## Required
+- [ ] All exported functions have JSDoc comments
+- [ ] Test coverage ≥80%
+- [ ] No console.log in production code
+- [ ] Error handling for all async operations
+- [ ] Input validation for all API endpoints
+
+## Preferred
+- [ ] Use async/await over .then()
+- [ ] Destructuring for cleaner code
+- [ ] Named exports over default exports
+- [ ] TypeScript strict mode enabled
+
+## Security
+- [ ] No hardcoded secrets or API keys
+- [ ] Parameterized database queries (no SQL injection)
+- [ ] Input sanitization for user data
+- [ ] Authentication on protected routes
+```
+
+Review agents automatically check against these criteria.
+
+## Confidence-Based Filtering
+
+Agents report confidence scores to reduce false positives:
+
+**Confidence levels**:
+- **95-100%**: Critical issues, high certainty
+- **80-94%**: Important issues, likely correct
+- **50-79%**: Potential issues, review needed
+- **Below 50%**: Low confidence, might be false positive
+
+**Default threshold**: ≥80% (configurable)
+
+**Adjust threshold**:
+```markdown
+---
+description: Strict code reviewer
+confidence-threshold: 90
+---
+Only report issues with 90%+ confidence
+```
+
+## Automated Fixes
+
+Some issues can be auto-fixed:
+
+```
+> Review the code and fix all auto-fixable issues
+```
+
+Claude will:
+1. Run code review
+2. Identify fixable issues (formatting, simple refactors)
+3. Apply fixes automatically
+4. Show changes for approval
+
+**Auto-fixable issues**:
+- Code formatting
+- Missing semicolons/commas
+- Unused imports
+- Simple refactoring (var → const)
+
+**Require manual review**:
+- Logic changes
+- Algorithm optimization
+- Architecture changes
+
+## Integration with Git Hooks
+
+Automate reviews with hooks:
+
+**Pre-commit review**:
+```json
+{
+  "hooks": [
+    {
+      "name": "code-review-hook",
+      "events": ["PreToolUse"],
+      "command": "claude-review-changed-files.sh",
+      "match": {
+        "tool": "Bash",
+        "pattern": "git commit:*"
+      },
+      "blocking": true
+    }
+  ]
+}
+```
+
+Script `claude-review-changed-files.sh`:
+```bash
+#!/bin/bash
+# Get changed files
+files=$(git diff --cached --name-only --diff-filter=ACM)
+
+# Run review
+claude -p "Launch code-reviewer to check: $files"
+
+# Exit with agent's exit code
+```
+
+If review finds critical issues, commit is blocked.
+
+## Best Practices
+
+<Tip>
+  **Review early and often**: Catch issues before they reach PR stage
+</Tip>
+
+<Tip>
+  **Use multiple agents**: Different agents catch different issue types
+</Tip>
+
+<Tip>
+  **Define project standards**: Document expectations in CLAUDE.md
+</Tip>
+
+<Tip>
+  **Filter by confidence**: Focus on high-confidence issues first
+</Tip>
+
+<Tip>
+  **Fix critical issues first**: Address security and bugs before quality improvements
+</Tip>
+
+## Common Review Patterns
+
+### Security Review
+
+```
+> Review @src/ for security vulnerabilities:
+  - SQL injection
+  - XSS vulnerabilities
+  - Authentication bypass
+  - Hardcoded secrets
+  - Insecure dependencies
+```
+
+### Performance Review
+
+```
+> Review @src/api/ for performance issues:
+  - N+1 queries
+  - Missing database indexes
+  - Inefficient algorithms
+  - Memory leaks
+  - Missing caching
+```
+
+### Maintainability Review
+
+```
+> Review @src/services/ for maintainability:
+  - Code duplication (DRY violations)
+  - High complexity
+  - Poor naming
+  - Missing documentation
+  - Tight coupling
+```
+
+## Troubleshooting
+
+### Too Many False Positives
+
+**Issue**: Agents report issues that aren't actually problems
+
+**Solutions**:
+- Increase confidence threshold
+- Add context to CLAUDE.md about project-specific patterns
+- Use more specific review prompts
+
+### Missing Real Issues
+
+**Issue**: Agents don't catch known problems
+
+**Solutions**:
+- Lower confidence threshold temporarily
+- Provide example of the issue type
+- Use specialized agents (security, performance)
+- Add issue type to CLAUDE.md checklist
+
+### Review Takes Too Long
+
+**Issue**: Code review agents are slow
+
+**Solutions**:
+- Review specific files/directories instead of entire codebase
+- Use faster model (Sonnet instead of Opus) for initial reviews
+- Run agents in parallel on different code sections
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Git Workflows" icon="git-alt" href="/guides/git-workflows">
+    Integrate review into git workflows
+  </Card>
+  
+  <Card title="Task Automation" icon="robot" href="/guides/task-automation">
+    Create custom review agents
+  </Card>
+  
+  <Card title="Agents" icon="users" href="/concepts/agents">
+    Learn more about agent capabilities
+  </Card>
+  
+  <Card title="Project Config" icon="gear" href="/configuration/project-config">
+    Configure review standards
+  </Card>
+</CardGroup>

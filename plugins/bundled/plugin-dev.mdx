@@ -1,0 +1,355 @@
+---
+title: Plugin Dev Toolkit
+description: Comprehensive toolkit for developing Claude Code plugins with 7 expert skills and AI-assisted creation
+---
+
+The Plugin Development Toolkit provides seven specialized skills to help you build high-quality Claude Code plugins, plus a guided workflow command for creating plugins from scratch.
+
+## Overview
+
+This toolkit includes:
+- **7 specialized skills** covering all aspects of plugin development
+- **Guided workflow command** for end-to-end plugin creation
+- **3 validation agents** for ensuring plugin quality
+- **Utility scripts** for testing and validation
+- **Working examples** for every component type
+
+**Philosophy**: Progressive disclosure - lean core documentation, detailed references, and working examples when you need them.
+
+## Command: /plugin-dev:create-plugin
+
+A comprehensive, end-to-end workflow command for creating plugins from scratch, similar to the feature-dev workflow.
+
+### 8-Phase Process
+
+<Steps>
+  <Step title="Discovery">
+    Understand plugin purpose and requirements
+  </Step>
+  
+  <Step title="Component Planning">
+    Determine needed skills, commands, agents, hooks, MCP
+  </Step>
+  
+  <Step title="Detailed Design">
+    Specify each component and resolve ambiguities
+  </Step>
+  
+  <Step title="Structure Creation">
+    Set up directories and manifest
+  </Step>
+  
+  <Step title="Component Implementation">
+    Create each component using AI-assisted agents
+  </Step>
+  
+  <Step title="Validation">
+    Run plugin-validator and component-specific checks
+  </Step>
+  
+  <Step title="Testing">
+    Verify plugin works in Claude Code
+  </Step>
+  
+  <Step title="Documentation">
+    Finalize README and prepare for distribution
+  </Step>
+</Steps>
+
+### Usage
+
+```bash
+/plugin-dev:create-plugin [optional description]
+```
+
+**Examples:**
+```bash
+/plugin-dev:create-plugin
+/plugin-dev:create-plugin A plugin for managing database migrations
+```
+
+### Features
+
+- Asks clarifying questions at each phase
+- Loads relevant skills automatically
+- Uses agent-creator for AI-assisted agent generation
+- Runs validation utilities
+- Follows plugin-dev's own proven patterns
+- Guides through testing and verification
+
+## The 7 Skills
+
+### 1. Hook Development
+
+**Trigger phrases**: "create a hook", "add a PreToolUse hook", "validate tool use", "implement prompt-based hooks", "${CLAUDE_PLUGIN_ROOT}", "block dangerous commands"
+
+**What it covers:**
+- Prompt-based hooks (recommended) with LLM decision-making
+- Command hooks for deterministic validation
+- All hook events: PreToolUse, PostToolUse, Stop, SubagentStop, SessionStart, SessionEnd, UserPromptSubmit, PreCompact, Notification
+- Hook output formats and JSON schemas
+- Security best practices and input validation
+- ${CLAUDE_PLUGIN_ROOT} for portable paths
+
+**Resources:**
+- Core SKILL.md (1,619 words)
+- 3 example hook scripts
+- 3 reference docs
+- 3 utility scripts: validate-hook-schema.sh, test-hook.sh, hook-linter.sh
+
+### 2. MCP Integration
+
+**Trigger phrases**: "add MCP server", "integrate MCP", "configure .mcp.json", "Model Context Protocol", "stdio/SSE/HTTP server", "connect external service"
+
+**What it covers:**
+- MCP server configuration (.mcp.json vs plugin.json)
+- All server types: stdio (local), SSE (hosted/OAuth), HTTP (REST), WebSocket (real-time)
+- Environment variable expansion
+- MCP tool naming and usage in commands/agents
+- Authentication patterns: OAuth, tokens, env vars
+- Integration patterns and performance optimization
+
+**Resources:**
+- Core SKILL.md (1,666 words)
+- 3 example configurations
+- 3 reference docs (~8,600 words)
+
+### 3. Plugin Structure
+
+**Trigger phrases**: "plugin structure", "plugin.json manifest", "auto-discovery", "component organization", "plugin directory layout"
+
+**What it covers:**
+- Standard plugin directory structure and auto-discovery
+- plugin.json manifest format and all fields
+- Component organization (commands, agents, skills, hooks)
+- ${CLAUDE_PLUGIN_ROOT} usage throughout
+- File naming conventions and best practices
+- Minimal, standard, and advanced plugin patterns
+
+**Resources:**
+- Core SKILL.md (1,619 words)
+- 3 example structures
+- 2 reference docs
+
+### 4. Plugin Settings
+
+**Trigger phrases**: "plugin settings", "store plugin configuration", ".local.md files", "plugin state files", "read YAML frontmatter", "per-project plugin settings"
+
+**What it covers:**
+- .claude/plugin-name.local.md pattern for configuration
+- YAML frontmatter + markdown body structure
+- Parsing techniques for bash scripts
+- Temporarily active hooks (flag files and quick-exit)
+- Real-world examples from plugins
+- Atomic file updates and validation
+
+**Resources:**
+- Core SKILL.md (1,623 words)
+- 3 examples
+- 2 reference docs
+- 2 utility scripts
+
+### 5. Command Development
+
+**Trigger phrases**: "create a slash command", "add a command", "command frontmatter", "define command arguments", "organize commands"
+
+**What it covers:**
+- Slash command structure and markdown format
+- YAML frontmatter fields (description, argument-hint, allowed-tools)
+- Dynamic arguments and file references
+- Bash execution for context
+- Command organization and namespacing
+
+**Resources:**
+- Core SKILL.md (1,535 words)
+- Examples and reference documentation
+
+### 6. Agent Development
+
+**Trigger phrases**: "create an agent", "add an agent", "write a subagent", "agent frontmatter", "when to use description", "agent examples", "autonomous agent"
+
+**What it covers:**
+- Agent file structure (YAML frontmatter + system prompt)
+- All frontmatter fields (name, description, model, color, tools)
+- Description format with `<example>` blocks for reliable triggering
+- System prompt design patterns
+- AI-assisted agent generation
+- Validation rules and best practices
+
+**Resources:**
+- Core SKILL.md (1,438 words)
+- 2 examples with 4 full agents
+- 3 reference docs (~6,500 words)
+- validate-agent.sh utility
+
+### 7. Skill Development
+
+**Trigger phrases**: "create a skill", "add a skill to plugin", "write a new skill", "improve skill description", "organize skill content"
+
+**What it covers:**
+- Skill structure (SKILL.md with YAML frontmatter)
+- Progressive disclosure principle
+- Strong trigger descriptions with specific phrases
+- Writing style (imperative/infinitive form, third person)
+- Bundled resources organization
+- Skill creation workflow
+
+**Resources:**
+- Core SKILL.md (1,232 words)
+- References and methodology docs
+- Examples from plugin-dev's own skills
+
+## Agents
+
+### agent-creator
+
+AI-assisted agent generation using Claude Code's proven prompt.
+
+**What it does:**
+- Asks clarifying questions about agent purpose
+- Generates complete agent file with frontmatter and system prompt
+- Follows best practices for triggering and design
+- Validates output against agent development guidelines
+
+### plugin-validator
+
+Validates plugin structure and configuration.
+
+**What it checks:**
+- plugin.json manifest format
+- Directory structure
+- Component file formats
+- Path references use ${CLAUDE_PLUGIN_ROOT}
+- Required files exist
+
+### skill-reviewer
+
+Reviews skill quality and triggering reliability.
+
+**What it checks:**
+- Trigger phrase specificity
+- Progressive disclosure structure
+- Writing style consistency
+- Resource organization
+
+## Development Workflow
+
+```
+┌─────────────────────┐
+│  Design Structure   │  → plugin-structure skill
+│  (manifest, layout) │
+└──────────┬──────────┘
+           │
+┌──────────▼──────────┐
+│  Add Components     │
+│  (commands, agents, │  → All skills provide guidance
+│   skills, hooks)    │
+└──────────┬──────────┘
+           │
+┌──────────▼──────────┐
+│  Integrate Services │  → mcp-integration skill
+│  (MCP servers)      │
+└──────────┬──────────┘
+           │
+┌──────────▼──────────┐
+│  Add Automation     │  → hook-development skill
+│  (hooks, validation)│     + utility scripts
+└──────────┬──────────┘
+           │
+┌──────────▼──────────┐
+│  Test & Validate    │  → Validation agents
+│                     │     + utility scripts
+└─────────────────────┘
+```
+
+## Utility Scripts
+
+The hook-development skill includes production-ready utilities:
+
+```bash
+# Validate hooks.json structure
+./validate-hook-schema.sh hooks/hooks.json
+
+# Test hooks before deployment
+./test-hook.sh my-hook.sh test-input.json
+
+# Lint hook scripts for best practices
+./hook-linter.sh my-hook.sh
+```
+
+## Quick Start Examples
+
+### Creating Your First Plugin
+
+```
+"What's the best directory structure for a plugin with commands and MCP integration?"
+→ plugin-structure skill provides layout
+
+"How do I add an MCP server for database access?"
+→ mcp-integration skill provides examples
+
+"Create a PreToolUse hook that validates file writes"
+→ hook-development skill gives working examples
+```
+
+### Building a Database Plugin
+
+<Steps>
+  <Step title="Structure">
+    "What's the structure for a plugin with MCP integration?"
+  </Step>
+  
+  <Step title="MCP Configuration">
+    "How do I configure an stdio MCP server for PostgreSQL?"
+  </Step>
+  
+  <Step title="Add Hooks">
+    "Add a Stop hook to ensure connections close properly"
+  </Step>
+</Steps>
+
+## Best Practices
+
+All skills emphasize:
+
+<CardGroup cols={2}>
+  <Card title="Security First" icon="shield">
+    Input validation, HTTPS/WSS, environment variables for credentials
+  </Card>
+  <Card title="Portability" icon="globe">
+    Use ${CLAUDE_PLUGIN_ROOT} everywhere, relative paths only
+  </Card>
+  <Card title="Testing" icon="vial">
+    Validate configurations, test hooks, use debug mode
+  </Card>
+  <Card title="Documentation" icon="book">
+    Clear READMEs, documented environment variables, usage examples
+  </Card>
+</CardGroup>
+
+## Installation
+
+Install from claude-code-marketplace:
+
+```bash
+/plugin install plugin-dev@claude-code-marketplace
+```
+
+Or for development:
+
+```bash
+cc --plugin-dir /path/to/plugin-dev
+```
+
+## Total Content
+
+- **Core Skills**: ~11,065 words across 7 SKILL.md files
+- **Reference Docs**: ~10,000+ words of detailed guides
+- **Examples**: 12+ working examples
+- **Utilities**: 6 production-ready scripts
+
+## Plugin Information
+
+**Author**: Daisy Hollman (daisy@anthropic.com)  
+**Version**: 0.1.0  
+**License**: MIT

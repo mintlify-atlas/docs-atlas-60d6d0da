@@ -1,0 +1,488 @@
+---
+title: Command Development
+description: Create custom slash commands for Claude Code plugins
+---
+
+Slash commands are frequently-used prompts defined as Markdown files that Claude executes during interactive sessions. They provide reusability, consistency, and efficiency for common workflows.
+
+## What is a Slash Command?
+
+A slash command is a Markdown file containing a prompt that Claude executes when invoked.
+
+**Commands provide:**
+- **Reusability**: Define once, use repeatedly
+- **Consistency**: Standardize common workflows
+- **Sharing**: Distribute across team or projects
+- **Efficiency**: Quick access to complex prompts
+
+## Critical: Commands are Instructions FOR Claude
+
+<Warning>
+  Commands are written for agent consumption, not human consumption. Write commands as directives TO Claude about what to do, not as messages TO the user.
+</Warning>
+
+**Correct approach (instructions for Claude):**
+```markdown
+Review this code for security vulnerabilities including:
+- SQL injection
+- XSS attacks
+- Authentication issues
+
+Provide specific line numbers and severity ratings.
+```
+
+**Incorrect approach (messages to user):**
+```markdown
+This command will review your code for security issues.
+You'll receive a report with vulnerability details.
+```
+
+The first example tells Claude what to do. The second tells the user what will happen but doesn't instruct Claude.
+
+## Command Locations
+
+### Project Commands
+
+**Location**: `.claude/commands/`
+
+**Scope**: Available in specific project
+
+**Use for**: Team workflows, project-specific tasks
+
+```bash
+mkdir -p .claude/commands
+```
+
+### Personal Commands
+
+**Location**: `~/.claude/commands/`
+
+**Scope**: Available in all projects
+
+**Use for**: Personal workflows, cross-project utilities
+
+### Plugin Commands
+
+**Location**: `plugin-name/commands/`
+
+**Scope**: Available when plugin installed
+
+**Use for**: Plugin-specific functionality
+
+## File Format
+
+### Basic Structure
+
+Commands are Markdown files with `.md` extension:
+
+```
+.claude/commands/
+├── review.md           # /review command
+├── test.md             # /test command
+└── deploy.md           # /deploy command
+```
+
+**Simple command without frontmatter:**
+
+`commands/review.md`:
+```markdown
+Review this code for security vulnerabilities including:
+- SQL injection
+- XSS attacks
+- Authentication bypass
+- Insecure data handling
+
+Provide specific file:line references for each issue.
+```
+
+Invoke with: `/review`
+
+### With YAML Frontmatter
+
+Add configuration using YAML frontmatter:
+
+```markdown
+---
+description: Review code for security vulnerabilities
+argument-hint: [file-path]
+allowed-tools: ["Read", "Grep", "TodoWrite"]
+---
+
+Review the code for security vulnerabilities.
+
+If $ARGUMENTS is provided, focus on that file.
+Otherwise, review recent changes.
+```
+
+## Frontmatter Fields
+
+### description
+
+Short explanation shown in `/help`:
+
+```yaml
+description: Review code for security vulnerabilities
+```
+
+**Best practices:**
+- Keep under 80 characters
+- Action-oriented (starts with verb)
+- Specific about what the command does
+
+### argument-hint
+
+Shows expected arguments in `/help`:
+
+```yaml
+argument-hint: [file-path]
+argument-hint: <required-arg> [optional-arg]
+argument-hint: [--flag]
+```
+
+**Examples:**
+- `[file-path]` - Optional file path
+- `<message>` - Required message
+- `[--verbose]` - Optional flag
+
+### allowed-tools
+
+Restrict which tools Claude can use:
+
+```yaml
+allowed-tools: ["Read", "Write", "Grep", "Bash"]
+```
+
+<Tip>
+  Use to prevent unwanted actions. For read-only analysis, only allow Read and Grep.
+</Tip>
+
+## Dynamic Arguments
+
+### Using $ARGUMENTS
+
+Access user-provided arguments:
+
+```markdown
+---
+description: Greet the user
+argument-hint: [name]
+---
+
+If $ARGUMENTS is provided, greet that person by name.
+Otherwise, just say "Hello!"
+```
+
+**Usage:**
+```bash
+/greet Alice
+# Claude will greet Alice
+
+/greet
+# Claude will say "Hello!"
+```
+
+### Conditional Logic
+
+```markdown
+---
+argument-hint: [file-path]
+---
+
+If $ARGUMENTS is provided:
+1. Read that specific file
+2. Analyze just that file
+
+If $ARGUMENTS is empty:
+1. List all changed files with git status
+2. Ask which file to analyze
+3. Proceed with user's choice
+```
+
+## Interactive Commands
+
+### Using AskUserQuestion
+
+Create interactive commands:
+
+```markdown
+---
+description: Deploy application with environment selection
+---
+
+Use AskUserQuestion tool to ask:
+
+Header: "Select deployment environment"
+Options:
+- "Production" (value: "prod")
+- "Staging" (value: "stage")
+- "Development" (value: "dev")
+
+Based on the selection:
+1. Run appropriate deployment script
+2. Show deployment progress
+3. Verify deployment succeeded
+```
+
+### Multi-Step Workflows
+
+```markdown
+---
+description: Create new feature with guided setup
+---
+
+Follow these steps:
+
+1. Ask for feature name using AskUserQuestion
+2. Create feature branch: feature/[name]
+3. Create directory structure
+4. Generate boilerplate files
+5. Show summary of what was created
+```
+
+## Bash Execution for Context
+
+### Running Commands
+
+Execute bash commands to gather context:
+
+```markdown
+---
+description: Review recent git changes
+---
+
+1. Run `git log --oneline -10` to see recent commits
+2. Run `git diff HEAD~1` to see latest changes
+3. Analyze the changes for:
+   - Code quality issues
+   - Potential bugs
+   - Best practice violations
+```
+
+### File References
+
+```markdown
+---
+description: Analyze test coverage
+---
+
+First, check if coverage report exists:
+```bash
+if [ -f coverage/index.html ]; then
+  echo "Coverage report found"
+else
+  echo "Run tests to generate coverage first"
+  exit 1
+fi
+```
+
+Then read and analyze the coverage data.
+```
+
+## Command Organization
+
+### Naming Conventions
+
+**Use kebab-case for filenames:**
+- `code-review.md` → `/code-review`
+- `run-tests.md` → `/run-tests`
+- `create-migration.md` → `/create-migration`
+
+### Grouping Related Commands
+
+**Subdirectories for organization:**
+
+```
+commands/
+├── git/
+│   ├── commit.md
+│   ├── push.md
+│   └── pull-request.md
+├── test/
+│   ├── run.md
+│   ├── coverage.md
+│   └── watch.md
+└── deploy/
+    ├── staging.md
+    └── production.md
+```
+
+### Namespacing
+
+Use prefixes for plugin commands:
+
+```
+plugin-name/commands/
+├── plugin-name:setup.md
+├── plugin-name:configure.md
+└── plugin-name:help.md
+```
+
+Invoked as: `/plugin-name:setup`
+
+## Examples
+
+### Code Review Command
+
+`commands/review.md`:
+```markdown
+---
+description: Review code for quality and best practices
+argument-hint: [file-or-directory]
+allowed-tools: ["Read", "Grep", "Bash"]
+---
+
+Perform a thorough code review.
+
+If $ARGUMENTS is provided, focus on that file or directory.
+Otherwise, review git diff of staged changes.
+
+Check for:
+1. **Code Quality**
+   - Readability and maintainability
+   - Proper error handling
+   - Edge cases covered
+
+2. **Best Practices**
+   - Follows project conventions (check CLAUDE.md)
+   - Appropriate abstractions
+   - No code duplication
+
+3. **Potential Bugs**
+   - Logic errors
+   - Race conditions
+   - Resource leaks
+
+Provide specific file:line references for each issue.
+Rate severity: Critical, High, Medium, Low.
+```
+
+### Test Command
+
+`commands/test.md`:
+```markdown
+---
+description: Run tests with optional filters
+argument-hint: [test-pattern]
+---
+
+Run the project's test suite.
+
+Steps:
+1. Determine test framework (Jest, pytest, etc.)
+2. If $ARGUMENTS provided, filter tests by pattern
+3. Run tests with appropriate command
+4. Analyze failures if any
+5. Suggest fixes for failing tests
+```
+
+### Deploy Command
+
+`commands/deploy.md`:
+```markdown
+---
+description: Deploy application to specified environment
+---
+
+Deploy the application using interactive environment selection.
+
+1. Use AskUserQuestion to select environment:
+   - Production (requires confirmation)
+   - Staging
+   - Development
+
+2. If Production selected, ask for additional confirmation
+
+3. Run pre-deployment checks:
+   - Tests passing
+   - No uncommitted changes
+   - On correct branch
+
+4. Execute deployment:
+   - Build application
+   - Run deployment script
+   - Verify deployment
+
+5. Show deployment summary with URLs
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Clear Instructions" icon="list-check">
+    Write clear, specific instructions for Claude
+  </Card>
+  <Card title="Handle Arguments" icon="terminal">
+    Always handle both with and without $ARGUMENTS
+  </Card>
+  <Card title="Limit Tools" icon="lock">
+    Use allowed-tools to prevent unwanted actions
+  </Card>
+  <Card title="Add Context" icon="file-magnifying-glass">
+    Use bash commands to gather relevant context
+  </Card>
+</CardGroup>
+
+## Testing Commands
+
+### Manual Testing
+
+```bash
+# Load plugin locally
+cc --plugin-dir /path/to/plugin
+
+# Try your command
+/your-command
+/your-command with arguments
+```
+
+### Check Command Listing
+
+```
+/help
+```
+
+Verify your command appears with correct description and argument-hint.
+
+## Troubleshooting
+
+### Command Not Found
+
+**Issue**: Command doesn't appear in `/help`
+
+**Solutions**:
+- Check file is in `commands/` directory
+- Verify `.md` extension
+- Ensure YAML frontmatter syntax is correct
+- Restart Claude Code session
+
+### Arguments Not Working
+
+**Issue**: $ARGUMENTS is empty even when provided
+
+**Solutions**:
+- Check you're using `$ARGUMENTS` not `$ARGS`
+- Verify argument-hint matches what you're passing
+- Test with simple argument first
+
+### Wrong Tools Available
+
+**Issue**: Claude uses tools not in allowed-tools
+
+**Solutions**:
+- Double-check allowed-tools syntax
+- Tool names are case-sensitive
+- Some tools may be implicitly required
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Agents" icon="robot" href="/plugins/development/agents">
+    Create autonomous agents for complex tasks
+  </Card>
+  <Card title="Skills" icon="lightbulb" href="/plugins/development/skills">
+    Add auto-activating expertise
+  </Card>
+  <Card title="Hooks" icon="webhook" href="/plugins/development/hooks">
+    Create event-driven automation
+  </Card>
+</CardGroup>

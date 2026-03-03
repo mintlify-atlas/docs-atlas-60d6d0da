@@ -1,0 +1,546 @@
+---
+title: Hook Development
+description: Create event-driven automation with hooks in Claude Code plugins
+---
+
+Hooks are event-driven automation scripts that execute in response to Claude Code events. Use hooks to validate operations, enforce policies, add context, and integrate external tools into workflows.
+
+## What Are Hooks?
+
+Hooks allow you to:
+- **Validate tool calls** before execution (PreToolUse)
+- **React to tool results** (PostToolUse)
+- **Enforce completion standards** (Stop, SubagentStop)
+- **Load project context** (SessionStart)
+- **Automate workflows** across the development lifecycle
+
+## Hook Types
+
+### Prompt-Based Hooks (Recommended)
+
+Use LLM-driven decision making for context-aware validation:
+
+```json
+{
+  "type": "prompt",
+  "prompt": "Evaluate if this file write is safe. Check for: system paths, credentials, sensitive content. Return 'approve' or 'deny'.",
+  "timeout": 30
+}
+```
+
+**Supported events**: Stop, SubagentStop, UserPromptSubmit, PreToolUse
+
+**Benefits:**
+- Context-aware decisions based on natural language reasoning
+- Flexible evaluation logic without bash scripting
+- Better edge case handling
+- Easier to maintain and extend
+
+### Command Hooks
+
+Execute bash commands for deterministic checks:
+
+```json
+{
+  "type": "command",
+  "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/validate.sh",
+  "timeout": 60
+}
+```
+
+**Use for:**
+- Fast deterministic validations
+- File system operations
+- External tool integrations
+- Performance-critical checks
+
+## Hook Configuration Formats
+
+### Plugin Format
+
+For plugin hooks in `hooks/hooks.json`:
+
+```json
+{
+  "description": "Validation hooks for code quality",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/validate.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+<Note>
+  The `hooks` wrapper is required for plugin hooks.json files.
+</Note>
+
+### Settings Format
+
+For user settings in `.claude/settings.json`, use direct format (no wrapper):
+
+```json
+{
+  "PreToolUse": [
+    {
+      "matcher": "Write|Edit",
+      "hooks": [
+        {
+          "type": "prompt",
+          "prompt": "Validate file safety..."
+        }
+      ]
+    }
+  ]
+}
+```
+
+## Hook Events
+
+### PreToolUse
+
+Execute before any tool runs. Use to approve, deny, or modify tool calls.
+
+**Example (prompt-based):**
+```json
+{
+  "PreToolUse": [
+    {
+      "matcher": "Write|Edit",
+      "hooks": [
+        {
+          "type": "prompt",
+          "prompt": "Validate file write safety. Check: system paths, credentials, path traversal, sensitive content. Return 'approve' or 'deny'."
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Output:**
+```json
+{
+  "hookSpecificOutput": {
+    "permissionDecision": "allow|deny|ask",
+    "updatedInput": {"field": "modified_value"}
+  },
+  "message": "Optional message to user"
+}
+```
+
+**Example (command-based):**
+```json
+{
+  "PreToolUse": [
+    {
+      "matcher": "Bash",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/validate-bash.sh",
+          "timeout": 30
+        }
+      ]
+    }
+  ]
+}
+```
+
+### PostToolUse
+
+Execute after a tool completes. Use to process results or trigger follow-up actions.
+
+**Example:**
+```json
+{
+  "PostToolUse": [
+    {
+      "matcher": "Write|Edit",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/format-file.sh"
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Output:**
+```json
+{
+  "hookSpecificOutput": {
+    "updatedOutput": {"field": "modified_value"}
+  },
+  "message": "File formatted successfully"
+}
+```
+
+### Stop
+
+Execute when Claude wants to end the session. Use to enforce completion criteria.
+
+**Example (prompt-based):**
+```json
+{
+  "Stop": [
+    {
+      "hooks": [
+        {
+          "type": "prompt",
+          "prompt": "Check if all requirements are met before stopping: tests run, code reviewed, documentation updated. Return 'approve' to allow stop or 'deny' with explanation."
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Output:**
+```json
+{
+  "hookSpecificOutput": {
+    "stopDecision": "allow|deny"
+  },
+  "message": "Please run tests before completing"
+}
+```
+
+### SessionStart
+
+Execute when Claude Code session begins. Use to load context or configure environment.
+
+**Example:**
+```json
+{
+  "SessionStart": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/load-context.sh"
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Output:**
+```json
+{
+  "message": "Project context loaded: React 18, TypeScript 5.0"
+}
+```
+
+### UserPromptSubmit
+
+Execute when user submits a prompt. Use to validate or enrich user input.
+
+**Example:**
+```json
+{
+  "UserPromptSubmit": [
+    {
+      "hooks": [
+        {
+          "type": "prompt",
+          "prompt": "Check if user request contains sensitive data or inappropriate content. Return 'approve' or 'deny'."
+        }
+      ]
+    }
+  ]
+}
+```
+
+### SubagentStop
+
+Execute when a subagent wants to complete. Similar to Stop but for agents.
+
+### PreCompact
+
+Execute before context compaction. Use to preserve critical information.
+
+### Notification
+
+Execute on system notifications.
+
+## Matchers
+
+Filter which tool calls trigger your hook:
+
+### Tool Name Matching
+
+```json
+{
+  "matcher": "Write|Edit",
+  "hooks": [...]
+}
+```
+
+**Common patterns:**
+- `"Write"` - Only Write tool
+- `"Write|Edit"` - Write or Edit tools
+- `"Bash"` - Only Bash tool
+- `".*"` - All tools (use cautiously)
+
+### No Matcher
+
+For events without tool context (Stop, SessionStart, etc.), omit matcher:
+
+```json
+{
+  "SessionStart": [
+    {
+      "hooks": [...]
+    }
+  ]
+}
+```
+
+## Environment Variables
+
+### ${CLAUDE_PLUGIN_ROOT}
+
+Use for portable path references:
+
+```json
+{
+  "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/validate.sh"
+}
+```
+
+<Warning>
+  Always use ${CLAUDE_PLUGIN_ROOT} for paths. Never use hardcoded absolute paths.
+</Warning>
+
+### Custom Variables
+
+Access environment variables in hooks:
+
+```json
+{
+  "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/deploy.sh",
+  "env": {
+    "DEPLOY_ENV": "${DEPLOY_ENV}",
+    "API_KEY": "${API_KEY}"
+  }
+}
+```
+
+## Input and Output
+
+### Hook Input
+
+Hooks receive JSON input via stdin:
+
+**PreToolUse:**
+```json
+{
+  "toolName": "Write",
+  "toolInput": {
+    "file_path": "/path/to/file.ts",
+    "content": "file contents"
+  }
+}
+```
+
+**Stop:**
+```json
+{
+  "transcript": "...",
+  "sessionContext": {...}
+}
+```
+
+### Hook Output
+
+Return JSON to stdout:
+
+**Allow:**
+```json
+{
+  "hookSpecificOutput": {
+    "permissionDecision": "allow"
+  },
+  "message": "Operation approved"
+}
+```
+
+**Deny:**
+```json
+{
+  "hookSpecificOutput": {
+    "permissionDecision": "deny"
+  },
+  "message": "Cannot write to system directory"
+}
+```
+
+**Modify:**
+```json
+{
+  "hookSpecificOutput": {
+    "permissionDecision": "allow",
+    "updatedInput": {
+      "file_path": "/safe/path/file.ts"
+    }
+  }
+}
+```
+
+## Example Hooks
+
+### Validate Dangerous Commands
+
+`hooks/scripts/validate-bash.sh`:
+```bash
+#!/bin/bash
+set -e
+
+input=$(cat)
+command=$(echo "$input" | jq -r '.toolInput.command')
+
+# Check for dangerous patterns
+if echo "$command" | grep -qE "rm\s+-rf|dd\s+if=|mkfs"; then
+  echo '{"hookSpecificOutput":{"permissionDecision":"deny"},"message":"Dangerous command blocked"}'
+  exit 0
+fi
+
+echo '{"hookSpecificOutput":{"permissionDecision":"allow"}}'
+```
+
+### Load Project Context
+
+`hooks/scripts/load-context.sh`:
+```bash
+#!/bin/bash
+set -e
+
+context=""
+
+# Add package.json info if exists
+if [ -f package.json ]; then
+  framework=$(jq -r '.dependencies | keys[] | select(. == "react" or . == "vue" or . == "angular")' package.json | head -1)
+  if [ -n "$framework" ]; then
+    context="Using $framework framework. "
+  fi
+fi
+
+echo "{\"message\":\"$context Project context loaded\"}"
+```
+
+### Enforce Test Running
+
+`hooks/hooks.json`:
+```json
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Check the transcript to see if tests were run. If no test command appears (npm test, pytest, cargo test, etc.), deny with message to run tests first. Otherwise approve."
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Use Prompt Hooks" icon="message">
+    Prefer prompt-based hooks for flexible, context-aware logic
+  </Card>
+  <Card title="Portable Paths" icon="route">
+    Always use ${CLAUDE_PLUGIN_ROOT} for script paths
+  </Card>
+  <Card title="Set Timeouts" icon="clock">
+    Add reasonable timeouts to prevent hanging (default 120s)
+  </Card>
+  <Card title="Validate Input" icon="shield-check">
+    Always validate hook input before processing
+  </Card>
+</CardGroup>
+
+## Security Considerations
+
+<Warning>
+  Hooks execute with full system access. Validate all inputs and sanitize data before use.
+</Warning>
+
+- **Input validation**: Always validate and sanitize hook inputs
+- **Path safety**: Check for path traversal attempts
+- **Command injection**: Never use unvalidated input in shell commands
+- **Least privilege**: Run hooks with minimal necessary permissions
+- **Timeout protection**: Set reasonable timeouts to prevent DoS
+
+## Testing Hooks
+
+### Manual Testing
+
+```bash
+# Test with sample input
+echo '{"toolName":"Write","toolInput":{"file_path":"/tmp/test.txt"}}' | \
+  bash hooks/scripts/validate.sh
+```
+
+### Validation Script
+
+Use plugin-dev toolkit's validation utilities:
+
+```bash
+# Validate hooks.json schema
+./validate-hook-schema.sh hooks/hooks.json
+
+# Test hook script
+./test-hook.sh hooks/scripts/validate.sh test-input.json
+```
+
+## Troubleshooting
+
+### Hook Not Triggering
+
+- Check matcher pattern matches tool name
+- Verify hooks.json syntax
+- Check hook is in correct event (PreToolUse vs PostToolUse)
+- Enable debug mode: `claude --debug`
+
+### Hook Fails Silently
+
+- Check script has execute permissions: `chmod +x script.sh`
+- Verify ${CLAUDE_PLUGIN_ROOT} resolves correctly
+- Check script outputs valid JSON
+- Review timeout settings
+
+### Permission Decision Ignored
+
+- Ensure `permissionDecision` is in `hookSpecificOutput`
+- Check spelling: "allow" not "approve"
+- Verify JSON format is correct
+- Check hook type supports decision (PreToolUse, Stop)
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="MCP Integration" icon="plug" href="/plugins/development/mcp-integration">
+    Connect external services and APIs
+  </Card>
+  <Card title="Skills" icon="lightbulb" href="/plugins/development/skills">
+    Create auto-activating expertise
+  </Card>
+</CardGroup>

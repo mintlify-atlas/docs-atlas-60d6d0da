@@ -1,0 +1,594 @@
+---
+title: Agents
+description: Specialized background workers for complex code analysis and generation tasks
+---
+
+Agents are specialized background workers that handle complex tasks requiring deep codebase analysis, architecture design, or comprehensive code review. They run independently and report results when complete.
+
+## What Are Agents?
+
+Agents are isolated Claude instances that:
+
+- **Run in background**: Don't block your main conversation
+- **Specialize in tasks**: Optimized for specific workflows
+- **Work in parallel**: Multiple agents can run simultaneously
+- **Return structured results**: Provide detailed findings with file references
+
+## Built-in Agents
+
+Claude Code includes several powerful agents:
+
+### code-explorer
+
+**Purpose**: Deeply analyze codebase features by tracing execution paths
+
+**Best for**:
+- Understanding how features work
+- Tracing data flow through the application
+- Identifying architectural patterns
+- Finding related code and dependencies
+
+**Example usage**:
+```
+> Launch code-explorer to trace how user authentication works
+```
+
+**Output format**:
+```
+Entry Points:
+- src/app.js:23 - Login route handler
+- src/middleware/auth.js:12 - Authentication middleware
+
+Execution Flow:
+1. Request received at /auth/login (app.js:23)
+2. Validate credentials (auth/validate.js:45)
+3. Hash password check (auth/hash.js:67)
+4. Database query (db/users.js:89)
+5. Generate JWT token (auth/jwt.js:34)
+6. Return token to client (app.js:56)
+
+Key Files:
+- src/app.js:23-67 - Main authentication logic
+- src/auth/validate.js:45-78 - Input validation
+- src/auth/hash.js:67-92 - Password hashing
+```
+
+### code-architect
+
+**Purpose**: Design feature architectures and implementation blueprints
+
+**Best for**:
+- Planning new features
+- Designing refactoring approaches
+- Evaluating implementation options
+- Creating technical specifications
+
+**Example usage**:
+```
+> Launch code-architect to design a caching layer for the API
+```
+
+**Output format**:
+```
+Architecture Design: API Caching Layer
+
+Approach: Redis-based cache with middleware pattern
+
+Components:
+1. CacheMiddleware (src/middleware/cache.js)
+   - Intercepts requests
+   - Checks cache before handler
+   - Stores responses after handler
+
+2. RedisClient (src/cache/redis.js)
+   - Connection management
+   - Get/set operations
+   - TTL management
+
+3. CacheKeyGenerator (src/cache/keys.js)
+   - Generates consistent keys
+   - Handles query parameters
+   - Version support
+
+Implementation Order:
+1. Set up Redis client and connection
+2. Create cache key generator
+3. Build middleware
+4. Integrate with existing routes
+5. Add cache invalidation logic
+```
+
+### code-reviewer
+
+**Purpose**: Review code for bugs, quality issues, and convention compliance
+
+**Best for**:
+- Pre-commit code review
+- Identifying potential bugs
+- Checking project conventions
+- Finding code quality issues
+
+**Example usage**:
+```
+> Launch code-reviewer to check my recent changes
+```
+
+**Output format**:
+```
+Code Review Results (Confidence-filtered ≥80%)
+
+Critical Issues:
+1. [Bug] Unhandled promise rejection (src/api.js:67)
+   Confidence: 95%
+   Fix: Add .catch() handler or wrap in try-catch
+
+2. [Security] SQL injection risk (src/db/users.js:89)
+   Confidence: 90%
+   Fix: Use parameterized queries
+
+Important Issues:
+1. [Quality] Duplicate code in handlers (src/api/*.js)
+   Confidence: 85%
+   Suggestion: Extract to shared utility
+
+2. [Convention] Missing JSDoc comments (src/utils/helpers.js)
+   Confidence: 80%
+   CLAUDE.md reference: "All exported functions must have JSDoc"
+```
+
+## Custom Agents
+
+Create project-specific agents in `.claude/agents/`:
+
+```markdown
+---
+description: Analyze API endpoint performance
+model: claude-sonnet-4.6
+tools: ["Read", "Grep", "Bash"]
+---
+
+# API Performance Analyzer
+
+Analyze the specified API endpoint for performance issues:
+
+1. Find the endpoint implementation
+2. Identify:
+   - Database queries (N+1 problems)
+   - Synchronous operations
+   - Missing indexes
+   - Large data transfers
+3. Check for caching opportunities
+4. Review error handling overhead
+5. Suggest optimizations with examples
+
+Endpoint to analyze: $ARGUMENTS
+```
+
+Use with:
+```
+> Launch api-performance-analyzer for /users/:id
+```
+
+## Agent Configuration
+
+Agent frontmatter supports:
+
+```yaml
+---
+# Required
+description: Short description for agent selection
+
+# Optional
+model: claude-sonnet-4.6           # Model to use
+tools: ["Read", "Grep", "Bash"]    # Allowed tools
+isolation: worktree                 # Run in isolated git worktree
+background: true                    # Always run as background task
+memory: project                     # Memory scope (user/project/local)
+---
+```
+
+### Model Selection
+
+Choose based on task complexity:
+
+- **claude-sonnet-4.6**: Fast, general tasks
+- **claude-opus-4.6**: Complex analysis, deep reasoning
+- **claude-sonnet-4.5**: Legacy compatibility
+
+### Tool Restrictions
+
+Limit tools for security or performance:
+
+```yaml
+tools: ["Read", "Grep", "Glob"]  # Read-only agent
+```
+
+### Isolation Modes
+
+**Standard**: Runs in current working directory
+```yaml
+isolation: none
+```
+
+**Worktree**: Runs in isolated git worktree (safe for experimental changes)
+```yaml
+isolation: worktree
+```
+
+### Memory
+
+Agents can have persistent memory:
+
+```yaml
+memory: project  # Remembers across sessions in this project
+```
+
+Options: `user`, `project`, `local` (session only)
+
+## Launching Agents
+
+### Natural Language
+
+Claude automatically launches agents when appropriate:
+
+```
+> How does the payment processing work?
+```
+
+Claude may launch `code-explorer` to trace the implementation.
+
+### Explicit Launch
+
+Request specific agents:
+
+```
+> Launch code-architect to design the user notification system
+```
+
+### Multiple Agents
+
+Run agents in parallel:
+
+```
+> Launch 3 code-explorer agents:
+  1. Trace the authentication flow
+  2. Analyze the database layer
+  3. Map the API routes
+```
+
+### Background vs Foreground
+
+By default, agents run in foreground (blocking). Use background for long tasks:
+
+```
+> Launch code-reviewer in the background
+```
+
+Or configure in agent definition:
+```yaml
+background: true
+```
+
+## Agent Teams
+
+<Note>
+  Agent Teams is a research preview feature requiring `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`
+</Note>
+
+Agents can collaborate on complex tasks:
+
+```
+> Launch a team to build the user dashboard:
+  - code-explorer: Analyze existing dashboard patterns
+  - code-architect: Design the new dashboard
+  - Implementation agent: Build the components
+  - code-reviewer: Review the implementation
+```
+
+Teammates:
+- Share context and findings
+- Work sequentially or in parallel
+- Coordinate through structured handoffs
+
+## Task Management
+
+Track agent progress with the task system:
+
+### View Tasks
+
+```
+> /tasks
+```
+
+Shows:
+- Running agents
+- Completed agents
+- Task duration
+- Tool usage count
+
+### Keyboard Shortcuts
+
+- `Ctrl+B`: Open task viewer
+- `Ctrl+F`: Kill all background agents (press twice to confirm)
+
+### Task Dependencies
+
+Agents can depend on other agents:
+
+```yaml
+---
+description: Implement feature after design
+dependencies: ["architect-agent"]
+---
+```
+
+## Agent Communication
+
+Agents communicate results through:
+
+### Inline Results
+
+Short results appear inline:
+```
+Agent: code-explorer [Complete]
+Found 5 API endpoints using the /auth prefix
+```
+
+### Transcript Files
+
+Long results saved to files:
+```
+Agent: code-reviewer [Complete]
+Detailed results: /tmp/claude/agent-12345.txt
+```
+
+### Structured Data
+
+Agents can return structured findings:
+```json
+{
+  "issues": [
+    {
+      "severity": "critical",
+      "file": "src/api.js",
+      "line": 67,
+      "description": "Unhandled promise rejection",
+      "confidence": 0.95
+    }
+  ]
+}
+```
+
+## Use Cases
+
+### Feature Development Workflow
+
+The `/feature-dev` command uses agents across 7 phases:
+
+**Phase 2: Exploration**
+```
+Launch 2-3 code-explorer agents:
+- Find similar features
+- Map architecture
+- Analyze current implementation
+```
+
+**Phase 4: Design**
+```
+Launch 2-3 code-architect agents:
+- Minimal change approach
+- Clean architecture approach
+- Pragmatic balance approach
+```
+
+**Phase 6: Review**
+```
+Launch 3 code-reviewer agents:
+- Simplicity/DRY/elegance
+- Bugs/functional correctness
+- Conventions/abstractions
+```
+
+### Code Review
+
+The `pr-review-toolkit` plugin launches specialized agents:
+
+```
+> /review-pr --aspects all
+```
+
+Agents:
+- `comment-analyzer`: Check documentation
+- `pr-test-analyzer`: Verify test coverage
+- `silent-failure-hunter`: Find error handling issues
+- `type-design-analyzer`: Review type safety
+- `code-reviewer`: General code quality
+- `code-simplifier`: Identify simplification opportunities
+
+### Debugging
+
+Launch agents to investigate issues:
+
+```
+> I'm seeing memory leaks in production. Launch code-explorer
+  to trace all object allocations and retention paths.
+```
+
+## Advanced Features
+
+### Agent Hooks
+
+React to agent lifecycle events:
+
+```json
+{
+  "hooks": {
+    "events": ["SubagentStop"],
+    "command": "./notify-completion.sh"
+  }
+}
+```
+
+### Sub-agents
+
+Agents can launch other agents:
+
+```markdown
+If the codebase is large, launch 3 code-explorer sub-agents
+to analyze different modules in parallel.
+```
+
+### Tool Restrictions
+
+Limit which sub-agents can be spawned:
+
+```yaml
+tools: ["Task(code-explorer)", "Task(code-reviewer)"]
+```
+
+### Context Limits
+
+Agents have independent context windows:
+- Don't pollute main conversation
+- Can analyze large codebases
+- Results summarized when returned
+
+## Performance Considerations
+
+### Parallel Execution
+
+**Good**: Run independent agents in parallel
+```
+> Launch 3 agents in parallel:
+  - code-explorer for auth
+  - code-explorer for API
+  - code-explorer for database
+```
+
+**Less efficient**: Sequential execution
+```
+> Launch code-explorer for auth
+> (wait for completion)
+> Launch code-explorer for API
+```
+
+### Background Tasks
+
+Use background mode for:
+- Long-running analysis
+- Non-blocking operations
+- Parallel work while you continue
+
+**Example**:
+```
+> Run the full test suite in the background while I review the code
+```
+
+### Memory Usage
+
+Agents are cleaned up after completion:
+- Context released
+- Tool results freed
+- Only summary retained
+
+## Best Practices
+
+<Tip>
+  **Use specific agents**: Launch `code-explorer` for analysis, `code-architect` for design, `code-reviewer` for review.
+</Tip>
+
+<Tip>
+  **Run in parallel**: Multiple agents can work simultaneously on different aspects.
+</Tip>
+
+<Tip>
+  **Provide clear scope**: Tell agents exactly what to analyze or design.
+</Tip>
+
+<Tip>
+  **Review agent findings**: Agent results are recommendations—review before implementing.
+</Tip>
+
+<Tip>
+  **Use worktree isolation**: For experimental changes, use `isolation: worktree`.
+</Tip>
+
+## Troubleshooting
+
+### Agents Taking Too Long
+
+**Issue**: Agent hasn't completed after several minutes
+
+**Solutions**:
+- Agents analyzing large codebases need time
+- Check progress with `/tasks`
+- Kill with `Ctrl+F` if stuck
+- Narrow scope: "analyze only the auth module"
+
+### Agent Results Too Broad
+
+**Issue**: Agent analyzed too much code
+
+**Solutions**:
+- Be more specific in request
+- Use file references: "analyze @src/api/"
+- Limit scope: "focus on the login flow only"
+
+### Agents Not Available
+
+**Issue**: Custom agent not found
+
+**Solutions**:
+- Check file location: `.claude/agents/agent-name.md`
+- Verify frontmatter syntax
+- Restart Claude Code to reload agents
+- Run `claude agents` to list available agents
+
+## Examples
+
+### Comprehensive Feature Analysis
+
+```
+> Launch 3 code-explorer agents to analyze the payment system:
+  1. Trace the checkout flow from cart to confirmation
+  2. Analyze payment gateway integration and error handling
+  3. Map database transactions and rollback logic
+```
+
+### Architecture Design Options
+
+```
+> Launch 3 code-architect agents for the notification system:
+  1. Minimal approach: extend existing email service
+  2. Clean approach: dedicated notification service with providers
+  3. Pragmatic approach: notification queue with worker pattern
+```
+
+### Multi-aspect Code Review
+
+```
+> Launch 3 code-reviewer agents for @src/api/payments.js:
+  1. Security review (SQL injection, XSS, auth issues)
+  2. Performance review (N+1 queries, caching, indexing)
+  3. Maintainability review (DRY, complexity, documentation)
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Task Automation" icon="robot" href="/guides/task-automation">
+    Create custom agents and commands
+  </Card>
+  
+  <Card title="Codebase Understanding" icon="book" href="/concepts/codebase-understanding">
+    How agents analyze code
+  </Card>
+  
+  <Card title="Configuration" icon="gear" href="/configuration/settings">
+    Configure agent permissions and tools
+  </Card>
+  
+  <Card title="Git Workflows" icon="git-alt" href="/guides/git-workflows">
+    Use agents in git workflows
+  </Card>
+</CardGroup>

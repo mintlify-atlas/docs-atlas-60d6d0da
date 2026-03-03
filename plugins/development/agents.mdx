@@ -1,0 +1,516 @@
+---
+title: Agent Development
+description: Create autonomous agents for Claude Code plugins
+---
+
+Agents are autonomous subprocesses that handle complex, multi-step tasks independently. They're designed for situations where you need Claude to work autonomously rather than respond to direct user commands.
+
+## Agents vs Commands
+
+**Commands** are user-initiated actions:
+- Invoked explicitly with `/command-name`
+- Execute immediately when called
+- Direct, single-purpose workflows
+
+**Agents** are autonomous workers:
+- Triggered automatically based on context
+- Handle complex, multi-step analysis
+- Work independently with specialized focus
+
+<Tip>
+  Use commands for user-initiated workflows. Use agents for autonomous, specialized work that Claude triggers based on task context.
+</Tip>
+
+## Agent File Structure
+
+Agents are Markdown files with YAML frontmatter:
+
+```markdown
+---
+name: code-reviewer
+description: Use this agent when reviewing code for quality issues. Examples:
+
+<example>
+Context: User wants code reviewed before committing
+user: "Review my recent changes"
+assistant: "I'll use the code-reviewer agent to analyze your code."
+<commentary>
+User asked for code review, which matches this agent's purpose.
+</commentary>
+</example>
+
+model: sonnet
+color: blue
+tools: ["Read", "Grep", "Bash"]
+---
+
+You are an expert code reviewer specializing in quality analysis.
+
+**Your Core Responsibilities:**
+1. Identify code quality issues
+2. Check for bugs and edge cases
+3. Verify best practices compliance
+
+**Analysis Process:**
+[Step-by-step workflow...]
+```
+
+## Frontmatter Fields
+
+### name (required)
+
+Agent identifier used for namespacing and invocation.
+
+**Format**: lowercase, numbers, hyphens only
+
+**Length**: 3-50 characters
+
+**Good examples:**
+- `code-reviewer`
+- `test-generator`
+- `api-docs-writer`
+- `security-analyzer`
+
+**Bad examples:**
+- `helper` (too generic)
+- `-agent-` (starts/ends with hyphen)
+- `my_agent` (underscores not allowed)
+- `ag` (too short)
+
+### description (required)
+
+**This is the most critical field.** It defines when Claude should trigger this agent.
+
+**Must include:**
+1. Triggering conditions ("Use this agent when...")
+2. Multiple `<example>` blocks showing usage
+3. Context, user request, and assistant response
+4. `<commentary>` explaining why agent triggers
+
+**Format:**
+
+```markdown
+description: Use this agent when [conditions]. Examples:
+
+<example>
+Context: [Scenario description]
+user: "[What user says]"
+assistant: "[How Claude should respond]"
+<commentary>
+[Why this agent should be triggered]
+</commentary>
+</example>
+
+<example>
+[Additional example...]
+</example>
+```
+
+**Example:**
+
+```yaml
+description: Use this agent when analyzing test coverage quality. Examples:
+
+<example>
+Context: User wants to verify test thoroughness
+user: "Are my tests comprehensive enough?"
+assistant: "I'll use the test-analyzer agent to evaluate your test coverage."
+<commentary>
+User is asking about test quality, which requires specialized analysis of test coverage and edge cases.
+</commentary>
+</example>
+
+<example>
+Context: PR review focusing on testing
+user: "Review the tests in this PR"
+assistant: "I'll launch the test-analyzer agent to review test quality."
+<commentary>
+Explicit request to review tests requires specialized test analysis.
+</commentary>
+</example>
+```
+
+<Warning>
+  Without good examples in the description, your agent may not trigger reliably. Include at least 2-3 examples covering different triggering scenarios.
+</Warning>
+
+### model (optional)
+
+Which model to use for this agent:
+
+```yaml
+model: sonnet       # Claude 3.5 Sonnet (default)
+model: haiku        # Claude 3.5 Haiku (faster, cheaper)
+model: opus         # Claude 3 Opus (most capable)
+model: inherit      # Use whatever model the parent is using
+```
+
+**When to use each:**
+- `sonnet`: Default, good balance of capability and speed
+- `haiku`: Fast analysis, simple tasks, cost-sensitive workloads
+- `opus`: Most complex analysis, highest quality
+- `inherit`: Match parent model (useful for consistency)
+
+### color (optional)
+
+Visual identifier in Claude Code interface:
+
+```yaml
+color: blue
+color: green
+color: yellow
+color: red
+color: purple
+```
+
+**Use colors to categorize:**
+- `blue`: Analysis and review agents
+- `green`: Generation and creation agents
+- `yellow`: Exploration and research agents
+- `red`: Critical/security agents
+- `purple`: Specialized/custom agents
+
+### tools (optional)
+
+Restrict which tools the agent can use:
+
+```yaml
+tools: ["Read", "Grep", "Bash"]
+```
+
+**Common tool sets:**
+
+**Read-only analysis:**
+```yaml
+tools: ["Read", "Grep"]
+```
+
+**Code generation:**
+```yaml
+tools: ["Read", "Write", "Edit"]
+```
+
+**Full automation:**
+```yaml
+tools: ["Read", "Write", "Edit", "Bash", "Grep"]
+```
+
+## System Prompt
+
+The content after the frontmatter is the agent's system prompt.
+
+### Structure
+
+```markdown
+You are [role description].
+
+**Your Core Responsibilities:**
+1. [Responsibility 1]
+2. [Responsibility 2]
+3. [Responsibility 3]
+
+**[Process Section Name]:**
+[Step-by-step workflow]
+
+**Output Format:**
+[What to return]
+```
+
+### Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Clear Role" icon="id-badge">
+    Start with a clear role definition
+  </Card>
+  <Card title="Specific Tasks" icon="list-check">
+    List concrete responsibilities
+  </Card>
+  <Card title="Step-by-Step" icon="stairs">
+    Provide clear process steps
+  </Card>
+  <Card title="Output Format" icon="file-export">
+    Specify what to return
+  </Card>
+</CardGroup>
+
+## Example Agents
+
+### Analysis Agent
+
+`agents/code-explorer.md`:
+
+```markdown
+---
+name: code-explorer
+description: Deeply analyzes existing codebase features by tracing execution paths. Use this agent when the user asks to "understand how X works", "trace the implementation", "explore the codebase for Y", or needs to understand existing code before making changes. Examples:
+
+<example>
+Context: User needs to understand authentication flow
+user: "How does authentication work in this codebase?"
+assistant: "I'll use the code-explorer agent to trace the authentication implementation."
+<commentary>
+User wants to understand existing implementation, requiring systematic code exploration.
+</commentary>
+</example>
+
+model: sonnet
+color: yellow
+tools: ["Glob", "Grep", "Read", "Bash"]
+---
+
+You are an expert code analyst specializing in tracing and understanding feature implementations.
+
+**Your Core Responsibilities:**
+1. Find entry points and trace execution paths
+2. Map architecture layers and patterns
+3. Document data flow and transformations
+4. Identify dependencies and integrations
+
+**Analysis Approach:**
+
+1. **Feature Discovery**
+   - Find entry points (APIs, UI components, CLI commands)
+   - Locate core implementation files
+   - Map feature boundaries
+
+2. **Code Flow Tracing**
+   - Follow call chains from entry to output
+   - Trace data transformations at each step
+   - Identify all dependencies
+
+3. **Architecture Analysis**
+   - Map abstraction layers
+   - Identify design patterns
+   - Document interfaces between components
+
+**Output:**
+- Entry points with file:line references
+- Step-by-step execution flow
+- Key components and responsibilities
+- List of essential files to read for full understanding
+```
+
+### Generation Agent
+
+`agents/test-generator.md`:
+
+```markdown
+---
+name: test-generator
+description: Generates comprehensive test suites for code. Use when user asks to "write tests", "generate test cases", "create unit tests", or needs test coverage. Examples:
+
+<example>
+Context: New feature needs test coverage
+user: "Write tests for the new authentication module"
+assistant: "I'll use the test-generator agent to create comprehensive tests."
+<commentary>
+Explicit request to write tests for specific code.
+</commentary>
+</example>
+
+model: sonnet
+color: green
+tools: ["Read", "Write", "Grep"]
+---
+
+You are a test generation expert specializing in comprehensive test coverage.
+
+**Your Core Responsibilities:**
+1. Analyze code to understand functionality
+2. Generate test cases covering all paths
+3. Include edge cases and error conditions
+4. Follow project testing conventions
+
+**Test Generation Process:**
+
+1. **Code Analysis**
+   - Read implementation
+   - Identify public interfaces
+   - Map all code paths
+   - Find edge cases
+
+2. **Test Design**
+   - Happy path tests
+   - Error condition tests
+   - Edge case tests
+   - Integration tests if needed
+
+3. **Implementation**
+   - Follow project test framework
+   - Use appropriate assertions
+   - Add descriptive test names
+   - Include comments for complex tests
+
+**Output:**
+- Complete test file(s)
+- Test coverage summary
+- Any gaps in testability
+```
+
+### Review Agent
+
+`agents/security-reviewer.md`:
+
+```markdown
+---
+name: security-reviewer
+description: Reviews code for security vulnerabilities. Use when user asks about security, wants security review, or mentions vulnerabilities. Examples:
+
+<example>
+Context: PR needs security review
+user: "Check this code for security issues"
+assistant: "I'll use the security-reviewer agent for a thorough security analysis."
+<commentary>
+Explicit request for security review requires specialized security expertise.
+</commentary>
+</example>
+
+model: sonnet
+color: red
+tools: ["Read", "Grep"]
+---
+
+You are a security expert specializing in code security reviews.
+
+**Your Core Responsibilities:**
+1. Identify security vulnerabilities
+2. Rate severity of findings
+3. Provide specific remediation guidance
+4. Check against OWASP Top 10
+
+**Security Analysis:**
+
+1. **Input Validation**
+   - SQL injection risks
+   - XSS vulnerabilities
+   - Command injection
+
+2. **Authentication/Authorization**
+   - Auth bypass vulnerabilities
+   - Privilege escalation
+   - Session management issues
+
+3. **Data Protection**
+   - Sensitive data exposure
+   - Insecure cryptography
+   - Hardcoded credentials
+
+4. **Other Issues**
+   - Insecure dependencies
+   - Configuration issues
+   - Logic flaws
+
+**Output Format:**
+
+For each issue:
+- **Severity**: Critical/High/Medium/Low
+- **Location**: file:line
+- **Vulnerability**: Type and description
+- **Impact**: Potential consequences
+- **Remediation**: Specific fix guidance
+- **Reference**: OWASP/CWE links
+```
+
+## AI-Assisted Agent Creation
+
+Use the plugin-dev toolkit's agent-creator:
+
+```bash
+/plugin install plugin-dev
+```
+
+Then:
+
+```
+"Create an agent that analyzes database query performance"
+```
+
+The agent-creator will:
+1. Ask clarifying questions
+2. Generate complete agent file
+3. Follow best practices automatically
+4. Validate the output
+
+## Testing Agents
+
+### Manual Testing
+
+Create scenarios that should trigger your agent:
+
+```
+# Should trigger code-explorer
+"How does the authentication system work?"
+
+# Should trigger test-generator
+"Write tests for the UserService class"
+
+# Should trigger security-reviewer
+"Check this code for security vulnerabilities"
+```
+
+### Verify Triggering
+
+Check if your agent triggers:
+
+```
+"What agents are available?"
+"Show me the code-explorer agent description"
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Specific Examples" icon="lightbulb">
+    Include 2-3 concrete examples in description
+  </Card>
+  <Card title="Clear Scope" icon="bullseye">
+    Define exactly what the agent does
+  </Card>
+  <Card title="Appropriate Tools" icon="wrench">
+    Limit tools to what's actually needed
+  </Card>
+  <Card title="Structured Output" icon="list">
+    Specify clear output format
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+### Agent Not Triggering
+
+**Issue**: Agent doesn't activate when it should
+
+**Solutions**:
+- Add more `<example>` blocks to description
+- Make examples more specific
+- Include exact user phrases
+- Add `<commentary>` to explain why
+
+### Agent Triggers Too Often
+
+**Issue**: Agent activates in wrong situations
+
+**Solutions**:
+- Make description more specific
+- Add negative examples (when NOT to trigger)
+- Narrow the triggering conditions
+
+### Wrong Output Format
+
+**Issue**: Agent doesn't follow output format
+
+**Solutions**:
+- Make output format more explicit in prompt
+- Add examples of expected output
+- Use markdown formatting for structure
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Skills" icon="lightbulb" href="/plugins/development/skills">
+    Create auto-activating expertise
+  </Card>
+  <Card title="Hooks" icon="webhook" href="/plugins/development/hooks">
+    Add event-driven automation
+  </Card>
+</CardGroup>

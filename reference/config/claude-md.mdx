@@ -1,0 +1,595 @@
+---
+title: CLAUDE.md
+description: Project context files that provide instructions and context to Claude Code
+---
+
+CLAUDE.md files provide project-specific context, instructions, and guidelines that are automatically loaded when Claude works in your codebase.
+
+## What is CLAUDE.md?
+
+CLAUDE.md is a markdown file that:
+
+- Lives in your project root or subdirectories
+- Provides context about your project structure, conventions, and patterns
+- Is automatically loaded into Claude's context when working in that directory
+- Helps Claude understand your codebase without repeated explanations
+- Can include coding standards, architecture decisions, and workflow guidelines
+
+## Basic Usage
+
+Create a `CLAUDE.md` file in your project root:
+
+```markdown CLAUDE.md
+# MyProject
+
+This is a Next.js application with TypeScript and Tailwind CSS.
+
+## Architecture
+
+- `/app` - Next.js 13+ app directory
+- `/components` - React components (use functional components with hooks)
+- `/lib` - Utility functions and shared logic
+- `/types` - TypeScript type definitions
+
+## Coding Standards
+
+- Use TypeScript for all new files
+- Prefer named exports over default exports
+- Use Tailwind CSS for styling (no CSS modules)
+- Write tests for all utility functions
+
+## Development Workflow
+
+1. Create feature branch from `main`
+2. Make changes with descriptive commits
+3. Run `npm test` before pushing
+4. Create PR with description
+```
+
+<Note>
+CLAUDE.md files are automatically loaded when you work in the directory where they're located.
+</Note>
+
+## File Location
+
+### Project Root
+
+Most common location:
+
+```bash
+project/
+├── CLAUDE.md          # Main project context
+├── src/
+├── package.json
+└── README.md
+```
+
+### Subdirectory Context
+
+Add context for specific parts of your codebase:
+
+```bash
+project/
+├── CLAUDE.md          # General project context
+├── frontend/
+│   ├── CLAUDE.md      # Frontend-specific context
+│   └── src/
+└── backend/
+    ├── CLAUDE.md      # Backend-specific context
+    └── api/
+```
+
+Claude loads the most specific CLAUDE.md when working in a subdirectory.
+
+### Additional Directories
+
+Load CLAUDE.md from additional directories:
+
+```bash
+# Enable loading from additional directories
+export CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1
+
+claude --add-dir ~/shared-context
+```
+
+This loads CLAUDE.md files from:
+- Current project
+- All `--add-dir` directories
+
+## What to Include
+
+### Project Overview
+
+High-level description:
+
+```markdown
+# MyProject
+
+A real-time collaboration platform built with:
+- Frontend: React + TypeScript + Vite
+- Backend: Node.js + Express + PostgreSQL
+- Real-time: WebSocket (Socket.io)
+- Deployment: Docker + AWS ECS
+```
+
+### Directory Structure
+
+Explain your organization:
+
+```markdown
+## Directory Structure
+
+```
+project/
+├── src/
+│   ├── api/          # REST API endpoints
+│   ├── components/   # React components
+│   ├── hooks/        # Custom React hooks
+│   ├── services/     # Business logic
+│   └── utils/        # Helper functions
+├── tests/
+└── scripts/       # Build and deploy scripts
+```
+```
+
+### Coding Standards
+
+Define your conventions:
+
+```markdown
+## Coding Standards
+
+### TypeScript
+
+- Use strict mode
+- Prefer interfaces over types for objects
+- Use `unknown` instead of `any`
+- Add JSDoc comments for public APIs
+
+### React
+
+- Use functional components with hooks
+- Prefer composition over inheritance
+- Keep components small (< 200 lines)
+- Use custom hooks for shared logic
+
+### Naming
+
+- Components: PascalCase (`UserProfile.tsx`)
+- Hooks: camelCase with `use` prefix (`useAuth.ts`)
+- Utilities: camelCase (`formatDate.ts`)
+- Constants: UPPER_SNAKE_CASE
+```
+
+### Architecture Patterns
+
+Document key decisions:
+
+```markdown
+## Architecture
+
+### State Management
+
+- Global state: Zustand
+- Server state: React Query
+- Form state: React Hook Form
+- URL state: React Router
+
+### API Communication
+
+- REST endpoints: `/api/v1/*`
+- Use axios with interceptors
+- Error handling: custom `ApiError` class
+- Authentication: JWT in Authorization header
+
+### Database
+
+- ORM: Prisma
+- Migrations: `prisma migrate`
+- Naming: snake_case for tables and columns
+```
+
+### Development Workflow
+
+Explain your process:
+
+```markdown
+## Development Workflow
+
+### Branch Strategy
+
+- `main` - Production-ready code
+- `develop` - Integration branch
+- `feature/*` - New features
+- `fix/*` - Bug fixes
+
+### Before Committing
+
+1. Run `npm run lint`
+2. Run `npm test`
+3. Run `npm run type-check`
+4. Update tests for new features
+
+### Pull Requests
+
+- Use PR template
+- Add screenshots for UI changes
+- Request review from team lead
+- Must pass CI checks
+```
+
+### Testing Guidelines
+
+```markdown
+## Testing
+
+### Unit Tests
+
+- Test utilities and pure functions
+- Use Jest + Testing Library
+- Aim for 80% coverage
+- Location: `__tests__/` next to source
+
+### Integration Tests
+
+- Test API endpoints
+- Use supertest
+- Mock external services
+- Location: `tests/integration/`
+
+### E2E Tests
+
+- Test critical user flows
+- Use Playwright
+- Run on staging before deploy
+- Location: `tests/e2e/`
+```
+
+### Common Patterns
+
+Share reusable patterns:
+
+```markdown
+## Common Patterns
+
+### Error Handling
+
+```typescript
+// Use custom error wrapper
+import { handleApiError } from '@/lib/errors';
+
+try {
+  await api.fetchData();
+} catch (error) {
+  handleApiError(error, {
+    context: 'fetchData',
+    fallback: defaultData
+  });
+}
+```
+
+### Data Fetching
+
+```typescript
+// Use React Query hooks
+import { useQuery } from '@tanstack/react-query';
+
+const { data, isLoading } = useQuery({
+  queryKey: ['users', userId],
+  queryFn: () => api.getUser(userId)
+});
+```
+```
+
+### External References
+
+Link to documentation:
+
+```markdown
+## Resources
+
+- [API Documentation](https://api.myproject.com/docs)
+- [Design System](https://design.myproject.com)
+- [Architecture Decision Records](./docs/adr/)
+- [Deployment Guide](./docs/deployment.md)
+```
+
+## External CLAUDE.md Files
+
+Import CLAUDE.md from external sources:
+
+```markdown CLAUDE.md
+# MyProject
+
+{import:https://raw.githubusercontent.com/company/standards/main/CLAUDE.md}
+
+## Project-Specific Notes
+
+Additional context specific to this project...
+```
+
+<Warning>
+External imports require user approval the first time. Claude will show:
+- Source URL
+- Content to be imported
+- Permission to proceed
+</Warning>
+
+## Token Counting
+
+CLAUDE.md files consume context tokens:
+
+- Files are loaded at session start
+- Content counts toward context limit
+- Keep files concise (< 2000 tokens recommended)
+- Use multiple CLAUDE.md files in subdirectories for large projects
+
+<Tip>
+Disable CLAUDE.md loading in simple mode: `CLAUDE_CODE_SIMPLE=1`
+</Tip>
+
+## Simple Mode
+
+Disable CLAUDE.md loading:
+
+```bash
+# Disable CLAUDE.md and other features
+export CLAUDE_CODE_SIMPLE=1
+claude
+```
+
+Simple mode also disables:
+- Skills
+- Session memory
+- Custom agents
+- MCP tools
+- Attachments
+- Hooks
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Keep it focused">
+    Include only information that helps Claude work effectively:
+    
+    ✅ Good:
+    - Architecture patterns
+    - Coding standards
+    - Common pitfalls
+    - File organization
+    
+    ❌ Avoid:
+    - Detailed implementation docs (link to them instead)
+    - Change history (use git)
+    - TODO lists (use issues)
+    - Personal notes
+  </Accordion>
+
+  <Accordion title="Use clear structure">
+    Organize with headings:
+    
+    ```markdown
+    # Project Name
+    
+    ## Architecture
+    ...
+    
+    ## Coding Standards
+    ...
+    
+    ## Testing
+    ...
+    
+    ## Deployment
+    ...
+    ```
+  </Accordion>
+
+  <Accordion title="Include code examples">
+    Show, don't just tell:
+    
+    ```markdown
+    ## Error Handling
+    
+    Always use our error wrapper:
+    
+    \`\`\`typescript
+    import { handleError } from '@/lib/errors';
+    
+    try {
+      await riskyOperation();
+    } catch (error) {
+      handleError(error, { context: 'operation' });
+    }
+    \`\`\`
+    ```
+  </Accordion>
+
+  <Accordion title="Update regularly">
+    Keep CLAUDE.md in sync with your project:
+    - Update when architecture changes
+    - Add new patterns as they emerge
+    - Remove outdated information
+    - Review during retrospectives
+  </Accordion>
+
+  <Accordion title="Use subdirectory files">
+    For large projects, create specific contexts:
+    
+    ```
+    project/
+    ├── CLAUDE.md           # General project info
+    ├── frontend/
+    │   └── CLAUDE.md       # Frontend patterns
+    └── backend/
+        └── CLAUDE.md       # Backend patterns
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Real-World Example
+
+Here's a complete CLAUDE.md for a SaaS application:
+
+```markdown CLAUDE.md
+# MyApp - Customer Analytics Platform
+
+A B2B SaaS platform for customer behavior analytics.
+
+## Tech Stack
+
+- Frontend: Next.js 14 (App Router) + TypeScript + Tailwind
+- Backend: Node.js + Express + Prisma + PostgreSQL
+- Auth: Auth0
+- Payments: Stripe
+- Hosting: Vercel (frontend) + Railway (backend)
+
+## Architecture
+
+### Directory Structure
+
+```
+apps/
+  web/              # Next.js frontend
+    app/            # App router pages
+    components/     # React components  
+    lib/            # Client utilities
+  api/              # Express backend
+    src/
+      routes/       # API endpoints
+      services/     # Business logic
+      models/       # Prisma models
+packages/
+  types/            # Shared TypeScript types
+  config/           # Shared configuration
+```
+
+### Data Flow
+
+1. User action in React component
+2. API call via `lib/api-client.ts`
+3. Express route handler
+4. Service layer (business logic)
+5. Prisma (database)
+6. Response back up the chain
+
+## Coding Standards
+
+### TypeScript
+
+- Strict mode enabled
+- Use Zod for runtime validation
+- Prefer `type` for unions, `interface` for objects
+- No `any` - use `unknown` or proper types
+
+### React Components
+
+```typescript
+// Functional components with TypeScript
+import { FC } from 'react';
+
+interface UserCardProps {
+  user: User;
+  onEdit: (id: string) => void;
+}
+
+export const UserCard: FC<UserCardProps> = ({ user, onEdit }) => {
+  return (
+    <div className="rounded-lg border p-4">
+      {/* Component content */}
+    </div>
+  );
+};
+```
+
+### API Endpoints
+
+```typescript
+// Express + Zod validation
+import { z } from 'zod';
+import { validateRequest } from '@/middleware/validate';
+
+const createUserSchema = z.object({
+  email: z.string().email(),
+  name: z.string().min(1)
+});
+
+router.post('/users', 
+  validateRequest(createUserSchema),
+  async (req, res) => {
+    // Handler logic
+  }
+);
+```
+
+### Database
+
+- Use Prisma migrations: `npm run db:migrate`
+- Table names: snake_case, plural (`customer_events`)
+- Column names: snake_case (`created_at`)
+- Always include `created_at`, `updated_at`
+
+## Testing
+
+- Unit tests: Jest + Testing Library
+- API tests: Supertest
+- E2E tests: Playwright
+- Run all: `npm test`
+- Coverage: `npm run test:coverage`
+
+## Development Workflow
+
+1. Create feature branch: `git checkout -b feature/description`
+2. Make changes with atomic commits
+3. Run tests: `npm test`
+4. Run linter: `npm run lint`
+5. Push and create PR
+6. Wait for CI (tests, types, lint)
+7. Get review approval
+8. Merge to main (deploys automatically)
+
+## Common Tasks
+
+### Adding a New Feature
+
+1. Add API route in `api/src/routes/`
+2. Add service in `api/src/services/`
+3. Update Prisma schema if needed
+4. Create React component in `web/components/`
+5. Add page in `web/app/`
+6. Write tests
+
+### Database Migrations
+
+```bash
+# Create migration
+npm run db:migrate:create
+
+# Apply migrations
+npm run db:migrate
+
+# Reset database (dev only)
+npm run db:reset
+```
+
+## Important Notes
+
+- Never commit `.env` files
+- Always validate user input with Zod
+- Use `handleApiError` for consistent error handling
+- Follow the PR template
+- Update CHANGELOG.md for user-facing changes
+
+## Resources
+
+- [API Docs](https://api.myapp.com/docs)
+- [Design System](https://www.figma.com/file/...)
+- [Deployment Guide](./docs/deployment.md)
+- [Troubleshooting](./docs/troubleshooting.md)
+```
+
+## Next Steps
+
+<Card title="plugin.json Reference" icon="puzzle-piece" href="/reference/config/plugin-json">
+  Learn about plugin configuration and structure
+</Card>

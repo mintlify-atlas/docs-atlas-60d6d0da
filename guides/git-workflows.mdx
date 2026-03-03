@@ -1,0 +1,689 @@
+---
+title: Git Workflows
+description: Streamline version control operations with intelligent commit messages, branch management, and PR creation
+---
+
+Claude Code integrates deeply with git, automating common workflows while maintaining best practices. From intelligent commit messages to pull request creation, Claude handles version control operations through natural language.
+
+## Core Git Operations
+
+### Creating Commits
+
+Use the `/commit` command to create intelligent commits:
+
+```
+> /commit
+```
+
+Claude will:
+1. Run `git status` to see changed files
+2. Run `git diff HEAD` to analyze changes
+3. Review recent commits with `git log --oneline -10`
+4. Draft a commit message following your project's style
+5. Stage and commit the changes
+
+**Example commit workflow**:
+```
+> /commit
+
+Analyzing changes...
+
+Changes detected:
+  Modified: src/auth/jwt.js
+  Modified: src/middleware/auth.js
+  Added: tests/auth.test.js
+
+Proposed commit message:
+  Add JWT token refresh functionality
+  
+  - Implement refresh token rotation in jwt.js
+  - Update auth middleware to handle refresh tokens
+  - Add comprehensive tests for token refresh flow
+
+Commit these changes? [Y/n]
+```
+
+### Commit, Push, and PR
+
+Streamline the entire workflow with `/commit-push-pr`:
+
+```
+> /commit-push-pr
+```
+
+Claude will:
+1. Analyze current changes
+2. Create a new branch if on main/master
+3. Create a commit with descriptive message
+4. Push the branch to origin
+5. Create a pull request using `gh pr create`
+
+<Note>
+  Requires the GitHub CLI (`gh`) to be installed and authenticated for PR creation.
+</Note>
+
+**Complete example**:
+```
+> /commit-push-pr
+
+Current branch: main
+Creating feature branch...
+
+  $ git checkout -b feature/auth-improvements
+  
+Staging changes...
+
+  $ git add src/auth/ tests/
+  
+Creating commit...
+
+  $ git commit -m "Add JWT refresh token support
+  
+  - Implement token rotation
+  - Add middleware support
+  - Add comprehensive tests"
+  
+Pushing to origin...
+
+  $ git push -u origin feature/auth-improvements
+  
+Creating pull request...
+
+  $ gh pr create --title "Add JWT refresh token support" --body "..."
+  
+✓ Pull request created: https://github.com/user/repo/pull/123
+```
+
+### Branch Management
+
+Create and switch branches with natural language:
+
+```
+> Create a new branch called feature/user-profiles
+```
+
+```
+> Switch to the develop branch
+```
+
+```
+> Delete the old-feature branch
+```
+
+Claude translates to appropriate git commands:
+```bash
+git checkout -b feature/user-profiles
+git checkout develop
+git branch -d old-feature
+```
+
+### Viewing Changes
+
+Check repository status:
+
+```
+> Show me what files have changed
+```
+
+```
+> What's the diff for the authentication module?
+```
+
+```
+> Show recent commits
+```
+
+Claude runs:
+```bash
+git status
+git diff src/auth/
+git log --oneline -20
+```
+
+## Advanced Git Operations
+
+### Git Worktrees
+
+Work on multiple branches simultaneously:
+
+```bash
+# Start Claude in an isolated worktree
+claude --worktree feature-branch
+```
+
+Or:
+```bash
+claude -w experiment/new-approach
+```
+
+**Benefits**:
+- Test changes without affecting main working directory
+- Run parallel development efforts
+- Safe experimentation without stashing
+
+**Agent worktree isolation**:
+```yaml
+---
+description: Experimental refactoring agent
+isolation: worktree
+---
+
+Safely attempt refactoring without affecting main codebase
+```
+
+### Interactive Rebase
+
+<Warning>
+  Claude Code doesn't support interactive git commands (like `git rebase -i`). Use these operations directly in your terminal.
+</Warning>
+
+For non-interactive rebase:
+```
+> Rebase this branch onto main
+```
+
+Claude runs:
+```bash
+git rebase main
+```
+
+### Stash Management
+
+Save and restore work in progress:
+
+```
+> Stash my current changes
+```
+
+```
+> Apply the last stash
+```
+
+```
+> Show stashed changes
+```
+
+Claude translates to:
+```bash
+git stash push -m "Work in progress"
+git stash pop
+git stash list
+```
+
+### Cherry-picking
+
+Apply specific commits:
+
+```
+> Cherry-pick commit abc123
+```
+
+Claude runs:
+```bash
+git cherry-pick abc123
+```
+
+## Commit Message Best Practices
+
+Claude learns commit message style from your repository:
+
+### Conventional Commits
+
+If your repo uses conventional commits, Claude follows the pattern:
+
+```
+feat: add user profile endpoints
+
+Implement GET /users/:id and PATCH /users/:id endpoints
+with authentication and validation.
+
+Breaking change: user ID now required in auth token
+```
+
+### Custom Formats
+
+Claude adapts to your style:
+
+**Analyzing recent commits**:
+```bash
+git log --oneline -10
+```
+
+Example patterns recognized:
+- `[TICKET-123] Description`
+- `component: description`
+- `TYPE(scope): description`
+- `Brief description\n\nDetailed explanation`
+
+### Commit Message Quality
+
+Claude's commit messages:
+
+**Focus on "why"**: Explain the purpose, not just the changes
+
+**Good**:
+```
+Add request rate limiting to prevent API abuse
+
+- Implement sliding window rate limiter
+- Add Redis backend for distributed limiting
+- Configure 100 requests per minute default
+```
+
+**Less effective**:
+```
+Update API
+
+- Add middleware
+- Change config
+```
+
+**Scope appropriately**: One commit per logical change
+
+**Reference context**: Link to issues, tickets, or PRs when relevant
+
+## Pull Request Workflows
+
+### Creating Pull Requests
+
+Claude creates PRs with the `gh` CLI:
+
+```bash
+# Full workflow
+> /commit-push-pr
+
+# Just create PR (after manual commit/push)
+> Create a pull request for this branch
+```
+
+**PR body format**:
+```markdown
+## Summary
+- Added JWT refresh token support
+- Implemented token rotation for security
+- Updated authentication middleware
+
+## Testing
+- Added unit tests for token refresh flow
+- Verified token rotation works correctly
+- Tested error handling for expired tokens
+
+## Breaking Changes
+None
+```
+
+### PR Status Tracking
+
+Claude shows PR status in the prompt footer:
+
+```
+Project: ~/my-app (feature/auth) • PR #123 ✓
+```
+
+Status indicators:
+- ✓ (green): Approved
+- ⚠ (yellow): Changes requested  
+- ● (blue): Pending review
+- ○ (gray): Draft
+
+### Resuming PR Sessions
+
+Resume work on a specific PR:
+
+```bash
+claude --from-pr 123
+# or
+claude --from-pr https://github.com/user/repo/pull/123
+```
+
+Claude:
+- Checks out the PR branch
+- Loads PR context
+- Links session to the PR
+- Shows PR status
+
+### Responding to PR Comments
+
+View PR comments:
+```
+> Show comments on this PR
+```
+
+Claude runs:
+```bash
+gh api repos/user/repo/pulls/123/comments
+```
+
+Address feedback:
+```
+> The reviewer asked to add error handling to the login function
+```
+
+Claude:
+1. Locates the login function
+2. Adds appropriate error handling
+3. Shows changes for review
+4. Commits with reference to feedback
+
+## Git Hooks Integration
+
+Claude Code supports custom git hooks via the hook system:
+
+### Pre-commit Validation
+
+Create `.claude/hooks/hooks.json`:
+```json
+{
+  "hooks": [
+    {
+      "name": "lint-check",
+      "events": ["PreToolUse"],
+      "command": "./scripts/lint.sh",
+      "match": {
+        "tool": "Bash",
+        "pattern": "git commit:*"
+      }
+    }
+  ]
+}
+```
+
+Runs linting before commits.
+
+### Post-commit Actions
+
+Notify team on commits:
+```json
+{
+  "hooks": [
+    {
+      "name": "notify-commit",
+      "events": ["PostToolUse"],
+      "command": "./scripts/notify-slack.sh",
+      "match": {
+        "tool": "Bash",
+        "pattern": "git commit:*"
+      }
+    }
+  ]
+}
+```
+
+### Pre-push Validation
+
+Run tests before pushing:
+```json
+{
+  "hooks": [
+    {
+      "name": "test-before-push",
+      "events": ["PreToolUse"],
+      "command": "npm test",
+      "match": {
+        "tool": "Bash",
+        "pattern": "git push:*"
+      },
+      "blocking": true
+    }
+  ]
+}
+```
+
+`blocking: true` prevents push if tests fail.
+
+## Session Attribution
+
+Commits and PRs created from Claude sessions include attribution:
+
+**Commit metadata**:
+```
+Author: Your Name <you@example.com>
+ClaudeCode-Session: abc123def456
+```
+
+**PR attribution**:
+```markdown
+Created via Claude Code session: https://claude.ai/session/abc123
+```
+
+Track which changes came from Claude sessions.
+
+## Common Workflows
+
+### Feature Development
+
+```
+1. > Create a branch called feature/user-search
+2. > Implement user search with filters
+3. > Add tests for the search functionality  
+4. > /commit-push-pr
+```
+
+### Bug Fix
+
+```
+1. > Create a hotfix branch from main
+2. > Fix the authentication timeout issue in @src/auth.js
+3. > Add a test to prevent regression
+4. > /commit
+5. > Push this branch and create a PR
+```
+
+### Code Review Response
+
+```
+1. $ claude --from-pr 123
+2. > Show me the PR comments
+3. > Address the error handling feedback in the login function
+4. > /commit with message "Address PR feedback: improve error handling"
+5. > Push the changes
+```
+
+### Refactoring
+
+```
+1. > Create a branch called refactor/auth-service
+2. > Extract authentication logic into a separate AuthService class
+3. > Update all call sites to use the new service
+4. > Ensure all tests still pass
+5. > /commit-push-pr
+```
+
+## Git Configuration
+
+### Safe Git Operations
+
+Claude respects git safety:
+
+**Read-only operations auto-approved**:
+- `git status`
+- `git diff`
+- `git log`
+- `git show`
+- `git branch --list`
+
+**Write operations require approval**:
+- `git commit`
+- `git push`
+- `git merge`
+- `git rebase`
+- `git reset`
+
+**Dangerous operations denied by default**:
+- `git push --force`
+- `git reset --hard`
+- `git clean -fd`
+
+### Permission Configuration
+
+Customize git permissions in `.claude/settings.json`:
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(git merge:*)"
+    ],
+    "deny": [
+      "Bash(git push --force:*)",
+      "Bash(git reset --hard:*)"
+    ]
+  }
+}
+```
+
+### Additional Git Flags
+
+Claude supports additional safe git flags:
+
+**git log**:
+- `--oneline`
+- `--graph`
+- `--topo-order`
+- `--cherry-pick`
+- `--format`
+
+**git show**:
+- `--stat`
+- `--name-only`
+- `--raw`
+
+## Troubleshooting
+
+### Commit Message Not Following Style
+
+**Issue**: Generated commit messages don't match your format
+
+**Solutions**:
+- Ensure recent commits follow consistent style
+- Add commit message template to `.claude/CLAUDE.md`:
+  ```markdown
+  ## Commit Message Format
+  [TICKET-ID] Brief description
+  
+  Detailed explanation of changes and motivation.
+  ```
+- Provide example: "Write a commit message like abc123"
+
+### PR Creation Fails
+
+**Issue**: `gh pr create` returns an error
+
+**Solutions**:
+- Install GitHub CLI: `brew install gh` or `winget install GitHub.cli`
+- Authenticate: `gh auth login`
+- Verify repository has remote: `git remote -v`
+- Check branch is pushed: `git push -u origin branch-name`
+
+### Permission Denied for Push
+
+**Issue**: Claude asks permission for every `git push`
+
+**Solutions**:
+- Create permanent rule: Select "Create rule" when prompted
+- Add to settings:
+  ```json
+  {
+    "permissions": {
+      "allow": ["Bash(git push:*)"]
+    }
+  }
+  ```
+
+### Branch Already Exists
+
+**Issue**: Cannot create branch with existing name
+
+**Solutions**:
+- Use different branch name
+- Delete old branch first: `git branch -d old-branch`
+- Switch to existing branch: `git checkout existing-branch`
+
+## Best Practices
+
+<Tip>
+  **Review before pushing**: Always review commits and changes before pushing to remote.
+</Tip>
+
+<Tip>
+  **Use descriptive branch names**: `feature/user-auth` instead of `fix-stuff`
+</Tip>
+
+<Tip>
+  **Keep commits focused**: One logical change per commit for easier review and revert
+</Tip>
+
+<Tip>
+  **Test before committing**: Run tests to ensure changes work before creating commits
+</Tip>
+
+<Tip>
+  **Use /commit-push-pr for features**: Streamlines entire workflow from commit to PR
+</Tip>
+
+## Advanced Topics
+
+### Monorepo Workflows
+
+For monorepos with multiple projects:
+
+```
+> Commit changes only in the packages/api directory
+```
+
+Claude:
+```bash
+git add packages/api/
+git commit -m "api: add new endpoints"
+```
+
+### Submodule Management
+
+While Claude Code doesn't directly manage submodules, you can:
+
+```
+> Update the git submodule in libs/shared
+```
+
+Claude runs:
+```bash
+git submodule update --init --recursive libs/shared
+```
+
+### CI/CD Integration
+
+Commit messages can trigger CI/CD:
+
+```
+> Commit with message "[skip ci] Update documentation"
+```
+
+Skips CI runs for documentation changes.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Code Review" icon="search" href="/guides/code-review">
+    Automate code review workflows
+  </Card>
+  
+  <Card title="Task Automation" icon="robot" href="/guides/task-automation">
+    Create custom git workflow commands
+  </Card>
+  
+  <Card title="IDE Integration" icon="window" href="/guides/ide-integration">
+    Use git features in VS Code
+  </Card>
+  
+  <Card title="Project Configuration" icon="gear" href="/configuration/project-config">
+    Configure git hooks and workflows
+  </Card>
+</CardGroup>

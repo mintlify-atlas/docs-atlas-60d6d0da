@@ -1,0 +1,646 @@
+---
+title: Lifecycle Events
+description: Complete reference for all hook lifecycle events in Claude Code
+---
+
+Claude Code provides lifecycle hooks for various events during session execution, tool usage, and system operations.
+
+## Session Lifecycle
+
+### SessionStart
+
+Runs when a new session starts or resumes.
+
+**Timing:** After session initialization, before first user message
+
+**Configuration:**
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/setup-session.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Input:**
+```json
+{
+  "session_id": "abc123",
+  "working_directory": "/path/to/project",
+  "is_resume": false
+}
+```
+
+**Use cases:**
+- Environment configuration
+- Loading project-specific context
+- Initializing external services
+- Setting up Docker containers
+- Loading API credentials
+
+<Tip>
+SessionStart hooks are deferred during startup to reduce time-to-interactive by ~500ms.
+</Tip>
+
+**Example:**
+```bash setup-session.sh
+#!/bin/bash
+# Configure environment for Claude session
+
+export PROJECT_ENV="development"
+source .env.local 2>/dev/null || true
+
+# Start development services
+docker-compose up -d db redis
+
+echo "Session environment configured" >&2
+exit 0
+```
+
+### Stop
+
+Runs when a session is ending (user exit or interruption).
+
+**Timing:** Before session cleanup and exit
+
+**Configuration:**
+```json
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/stop-hook.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Input:**
+```json
+{
+  "session_id": "abc123",
+  "transcript_path": "/path/to/transcript.jsonl",
+  "last_assistant_message": "Final message from Claude",
+  "working_directory": "/path/to/project"
+}
+```
+
+**Output (optional):**
+```json
+{
+  "decision": "block",
+  "reason": "Continue with new prompt",
+  "systemMessage": "Loop iteration 5"
+}
+```
+
+<Note>
+Stop hooks can block session exit by returning `"decision": "block"`. This enables continuous loop patterns.
+</Note>
+
+**Use cases:**
+- Cleanup operations
+- Saving session state
+- Stopping services
+- Creating session summaries
+- Continuous loop workflows (Ralph Wiggum pattern)
+
+**Example (Ralph Wiggum Loop):**
+```bash stop-hook.sh
+#!/bin/bash
+# Prevent exit and continue loop
+
+set -euo pipefail
+
+# Read hook input
+HOOK_INPUT=$(cat)
+
+# Check if loop is active
+if [[ ! -f ".claude/ralph-loop.local.md" ]]; then
+  exit 0  # Allow exit
+fi
+
+# Parse state
+FRONTMATTER=$(sed -n '/^---$/,/^---$/{ /^---$/d; p; }' ".claude/ralph-loop.local.md")
+ITERATION=$(echo "$FRONTMATTER" | grep '^iteration:' | sed 's/iteration: *//')
+MAX_ITERATIONS=$(echo "$FRONTMATTER" | grep '^max_iterations:' | sed 's/max_iterations: *//')
+
+# Check if max reached
+if [[ $MAX_ITERATIONS -gt 0 ]] && [[ $ITERATION -ge $MAX_ITERATIONS ]]; then
+  rm ".claude/ralph-loop.local.md"
+  exit 0  # Allow exit
+fi
+
+# Continue loop
+NEXT_ITERATION=$((ITERATION + 1))
+PROMPT_TEXT=$(awk '/^---$/{i++; next} i>=2' ".claude/ralph-loop.local.md")
+
+# Update state
+sed "s/^iteration: .*/iteration: $NEXT_ITERATION/" ".claude/ralph-loop.local.md" > tmp
+mv tmp ".claude/ralph-loop.local.md"
+
+# Block exit and feed prompt back
+jq -n \
+  --arg prompt "$PROMPT_TEXT" \
+  --arg msg "🔄 Ralph iteration $NEXT_ITERATION" \
+  '{
+    "decision": "block",
+    "reason": $prompt,
+    "systemMessage": $msg
+  }'
+
+exit 0
+```
+
+### Setup
+
+Runs for repository setup and maintenance operations.
+
+**Timing:** When invoked via CLI flags: `--init`, `--init-only`, or `--maintenance`
+
+**Configuration:**
+```json
+{
+  "hooks": {
+    "Setup": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ./scripts/setup.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Input:**
+```json
+{
+  "mode": "init",
+  "working_directory": "/path/to/project"
+}
+```
+
+**Use cases:**
+- Repository initialization
+- Dependency installation
+- Database migrations
+- Environment setup
+- Periodic maintenance tasks
+
+**Example:**
+```bash
+# Run setup on new clone
+claude --init
+
+# Run setup without starting session
+claude --init-only
+
+# Run maintenance tasks
+claude --maintenance
+```
+
+## Tool Lifecycle
+
+### PreToolUse
+
+Runs before a tool is executed.
+
+**Timing:** After Claude requests tool use, before execution
+
+**Configuration:**
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /path/to/validator.py"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Input:**
+```json
+{
+  "session_id": "abc123",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "git push origin main",
+    "workdir": "/path/to/project"
+  }
+}
+```
+
+**Output:**
+```json
+{
+  "decision": "block",
+  "additionalContext": "This command requires manual approval"
+}
+```
+
+**Exit codes:**
+- `0` - Allow execution
+- `1` - Show stderr to user only (allow execution)
+- `2` - Block execution, show stderr to Claude
+
+**Use cases:**
+- Command validation
+- Security checks
+- Command transformation
+- Rate limiting
+- Audit logging
+
+**Example (Command Validator):**
+```python validator.py
+#!/usr/bin/env python3
+import json
+import sys
+import re
+
+VALIDATION_RULES = [
+    (
+        r"^grep\b(?!.*\|)",
+        "Use 'rg' (ripgrep) instead of 'grep' for better performance",
+    ),
+    (
+        r"^find\s+\S+\s+-name\b",
+        "Use 'rg --files -g pattern' instead of 'find -name'",
+    ),
+]
+
+def validate_command(command: str) -> list[str]:
+    issues = []
+    for pattern, message in VALIDATION_RULES:
+        if re.search(pattern, command):
+            issues.append(message)
+    return issues
+
+try:
+    data = json.load(sys.stdin)
+except json.JSONDecodeError as e:
+    print(f"Error: Invalid JSON: {e}", file=sys.stderr)
+    sys.exit(1)
+
+tool_name = data.get("tool_name", "")
+if tool_name != "Bash":
+    sys.exit(0)
+
+command = data.get("tool_input", {}).get("command", "")
+if not command:
+    sys.exit(0)
+
+issues = validate_command(command)
+if issues:
+    for msg in issues:
+        print(f"• {msg}", file=sys.stderr)
+    sys.exit(2)  # Block execution
+
+sys.exit(0)  # Allow execution
+```
+
+### PostToolUse
+
+Runs after a tool completes execution.
+
+**Timing:** After tool execution, before result is sent to Claude
+
+**Configuration:**
+```json
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /path/to/logger.py"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Input:**
+```json
+{
+  "session_id": "abc123",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "npm test"
+  },
+  "tool_output": {
+    "stdout": "All tests passed",
+    "stderr": "",
+    "exit_code": 0
+  }
+}
+```
+
+**Use cases:**
+- Result logging
+- Metrics collection
+- Notification triggers
+- Result transformation
+- Error analysis
+
+## Git Worktree Lifecycle
+
+### WorktreeCreate
+
+Runs when a git worktree is created for agent isolation.
+
+**Timing:** After worktree creation, before agent starts
+
+**Configuration:**
+```json
+{
+  "hooks": {
+    "WorktreeCreate": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ./scripts/setup-worktree.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Input:**
+```json
+{
+  "worktree_path": "/path/to/worktree",
+  "branch_name": "claude/task-123",
+  "base_branch": "main"
+}
+```
+
+**Use cases:**
+- Worktree-specific configuration
+- Installing dependencies
+- Database setup
+- Environment configuration
+
+### WorktreeRemove
+
+Runs when a git worktree is being removed.
+
+**Timing:** Before worktree deletion
+
+**Configuration:**
+```json
+{
+  "hooks": {
+    "WorktreeRemove": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ./scripts/cleanup-worktree.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Input:**
+```json
+{
+  "worktree_path": "/path/to/worktree",
+  "branch_name": "claude/task-123"
+}
+```
+
+**Use cases:**
+- Cleanup operations
+- Stopping services
+- Collecting artifacts
+- Backup operations
+
+## Configuration Lifecycle
+
+### ConfigChange
+
+Runs when configuration files change during a session.
+
+**Timing:** When settings.json or related config files are modified
+
+**Configuration:**
+```json
+{
+  "hooks": {
+    "ConfigChange": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /path/to/audit-config.py"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Input:**
+```json
+{
+  "session_id": "abc123",
+  "config_file": "/path/to/settings.json",
+  "changes": {
+    "permissions.allow": ["Bash"]
+  }
+}
+```
+
+**Output (optional):**
+```json
+{
+  "decision": "block",
+  "reason": "Configuration changes require administrator approval"
+}
+```
+
+**Use cases:**
+- Enterprise security auditing
+- Configuration validation
+- Change approval workflows
+- Compliance enforcement
+
+## Agent Team Lifecycle
+
+### TeammateIdle
+
+Runs when an agent teammate becomes idle.
+
+**Timing:** When teammate completes work and awaits instructions
+
+**Configuration:**
+```json
+{
+  "hooks": {
+    "TeammateIdle": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /path/to/notify.py"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Input:**
+```json
+{
+  "session_id": "abc123",
+  "agent_id": "teammate-1",
+  "agent_type": "code-reviewer"
+}
+```
+
+### TaskCompleted
+
+Runs when a background task completes.
+
+**Timing:** When task finishes successfully or with error
+
+**Configuration:**
+```json
+{
+  "hooks": {
+    "TaskCompleted": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /path/to/task-logger.py"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Input:**
+```json
+{
+  "session_id": "abc123",
+  "task_id": "task-1",
+  "status": "success",
+  "result": "Task completed successfully",
+  "duration_ms": 5432
+}
+```
+
+### SubagentStop
+
+Runs when a subagent session ends.
+
+**Timing:** After subagent completes, before returning to parent
+
+**Input:**
+```json
+{
+  "session_id": "abc123",
+  "parent_session_id": "parent-123",
+  "agent_type": "code-analyzer",
+  "last_assistant_message": "Analysis complete"
+}
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Keep hooks fast">
+    Hooks run synchronously and block execution:
+    - Target < 100ms execution time
+    - Use background processes for slow work
+    - Cache expensive operations
+    - Avoid network calls when possible
+  </Accordion>
+
+  <Accordion title="Handle errors gracefully">
+    ```python
+    try:
+        data = json.load(sys.stdin)
+        # Process data
+    except Exception as e:
+        print(f"Hook error: {e}", file=sys.stderr)
+        sys.exit(1)  # Show error to user, allow execution
+    ```
+  </Accordion>
+
+  <Accordion title="Use appropriate exit codes">
+    - `0` - Success, allow operation
+    - `1` - Non-blocking error (user sees stderr)
+    - `2` - Blocking error (Claude sees stderr)
+    - Choose based on whether Claude should know about the issue
+  </Accordion>
+
+  <Accordion title="Validate input">
+    ```python
+    if "tool_input" not in data:
+        sys.exit(0)  # Gracefully handle missing data
+    
+    if data.get("tool_name") != "Bash":
+        sys.exit(0)  # Only process relevant tools
+    ```
+  </Accordion>
+
+  <Accordion title="Clean up state">
+    ```python
+    # Store session-specific state
+    STATE_FILE = f"~/.claude/hook-state-{session_id}.json"
+    
+    # Clean up old state files
+    cleanup_old_states()  # Runs periodically
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<Card title="Hook Examples" icon="code" href="/reference/hooks/examples">
+  See real-world hook implementations and patterns
+</Card>
