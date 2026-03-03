@@ -1,0 +1,148 @@
+{
+  "projectType": "cli-tool",
+  "projectName": "Claude Code",
+  "projectDescription": "Agentic coding tool that lives in your terminal, understands your codebase, and helps you code faster through natural language commands.",
+  "theme": "aspen",
+  "primaryColor": "#191919",
+  "lightColor": "#F4F0E8",
+  "darkColor": "#191919",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/overview",
+              "concepts/natural-language",
+              "concepts/agents",
+              "concepts/codebase-understanding"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/git-workflows",
+              "guides/code-review",
+              "guides/task-automation",
+              "guides/ide-integration"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration/settings",
+              "configuration/project-config",
+              "configuration/environment-variables"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Plugins",
+        "groups": [
+          {
+            "group": "Plugin System",
+            "pages": [
+              "plugins/overview",
+              "plugins/installation",
+              "plugins/marketplace"
+            ]
+          },
+          {
+            "group": "Bundled Plugins",
+            "pages": [
+              "plugins/bundled/agent-sdk-dev",
+              "plugins/bundled/code-review",
+              "plugins/bundled/commit-commands",
+              "plugins/bundled/feature-dev",
+              "plugins/bundled/frontend-design",
+              "plugins/bundled/hookify",
+              "plugins/bundled/plugin-dev",
+              "plugins/bundled/pr-review-toolkit"
+            ]
+          },
+          {
+            "group": "Plugin Development",
+            "pages": [
+              "plugins/development/getting-started",
+              "plugins/development/structure",
+              "plugins/development/commands",
+              "plugins/development/agents",
+              "plugins/development/hooks",
+              "plugins/development/skills",
+              "plugins/development/mcp-integration"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Commands",
+            "pages": [
+              "reference/commands/overview",
+              "reference/commands/built-in",
+              "reference/commands/slash-commands"
+            ]
+          },
+          {
+            "group": "Hooks",
+            "pages": [
+              "reference/hooks/overview",
+              "reference/hooks/lifecycle-events",
+              "reference/hooks/examples"
+            ]
+          },
+          {
+            "group": "Configuration Files",
+            "pages": [
+              "reference/config/settings-json",
+              "reference/config/claude-md",
+              "reference/config/plugin-json"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Natural language commands in terminal",
+    "Agentic task automation with multi-agent orchestration",
+    "Deep codebase understanding and exploration",
+    "Git workflow automation (commits, PRs, reviews)",
+    "Extensible plugin system with commands, agents, hooks, and skills",
+    "MCP (Model Context Protocol) integration",
+    "IDE integration (VS Code)",
+    "Automated code review with confidence scoring"
+  ],
+  "publicApiSurface": [
+    "claude [command]",
+    "/commit",
+    "/commit-push-pr",
+    "/code-review",
+    "/feature-dev",
+    "/plugin",
+    "/model",
+    "/memory",
+    "/clear",
+    "/copy",
+    "/bug",
+    "Plugin API: commands/",
+    "Plugin API: agents/",
+    "Plugin API: hooks/",
+    "Plugin API: skills/",
+    "Hook Events: SessionStart, PreToolUse, PostToolUse, Stop, WorktreeCreate, WorktreeRemove",
+    "MCP Integration: .mcp.json"
+  ]
+}
